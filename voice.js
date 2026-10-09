@@ -1,4 +1,4 @@
-/* Inkwell Voice — нейронная озвучка (Microsoft Edge: Ava, Andrew) с подсветкой слов.
+/* Inkwell Voice — нейронная озвучка (Dan — ElevenLabs; Ava, Andrew — Microsoft Edge) с подсветкой слов.
  * Самостоятельный модуль, от app.js не зависит.
  *
  *   InkVoice.has(text)                          — есть ли клип (false, пока индекс не загружен)
@@ -173,6 +173,12 @@
     ready: load,
     playing: function () { return !!curOpts; },
     count: function () { return IDX ? Object.keys(IDX.clips).length : 0; },
+    voice: function (text) { var f = clipFor(text); return (f && f.c[5]) || ''; },  // 'dan' | 'g:Имя' | 'f:Имя'
+    tags: function () {  // {метка голоса: сколько клипов}
+      var t = {};
+      if (IDX) for (var h in IDX.clips) { var v = IDX.clips[h][5]; if (v) t[v] = (t[v] || 0) + 1; }
+      return t;
+    },
     hash: function (text) { return cyrb53(key(text)); }
   };
   // индекс грузим, когда страница уже показалась

@@ -439,6 +439,19 @@
     unmark: function () { if (tts.kcur) tts.kcur.classList.remove('say'); tts.kcur = null; tts.kel = null; },
     // Есть ли качественная (нейро) запись для текста
     hasNeural: function (text) { try { return !!(window.InkVoice && window.InkVoice.has && window.InkVoice.has(String(text))); } catch (e) { return false; } },
+    // Чей голос у записи: 'dan' — диктор Dan (ElevenLabs), '' — Ava/Andrew или нет записи
+    voiceOf: function (text) { try { return (window.InkVoice && window.InkVoice.voice) ? window.InkVoice.voice(String(text)) : ''; } catch (e) { return ''; } },
+    // Подпись голоса по метке: 'dan' — ElevenLabs, 'g:Имя' — Google Gemini, 'f:Имя' — Fish Audio
+    voiceInfo: function (tag) {
+      if (!tag) return null;
+      if (tag === 'dan') return { badge: 'DAN', chip: '🎙 Читает Dan · голос ElevenLabs' };
+      var name = tag.slice(2), who = tag.charAt(0) === 'g' ? 'Google Gemini' : 'Fish Audio';
+      return { badge: 'HD+', chip: '🎙 Читает ' + name + ' · голос ' + who };
+    },
+    proAttr: function (text) {
+      var vi = tts.voiceInfo(tts.voiceOf(text));
+      return vi ? ' pro" data-v="' + vi.badge : '';
+    },
     // text — английский текст; btn — кнопка (мигает во время речи); rate — скорость; el — где подсвечивать слова
     speak: function (text, btn, rate, el, onEnd) {
       tts.stop();
@@ -790,7 +803,7 @@
       '<div class="fc-side">' +
       '<button class="fab fav' + (S.fav[it.id] ? ' on' : '') + '" data-act="fav" aria-label="В избранное">' + I.heart + '</button>' +
       (it.vk ? '<button class="fab recite" data-act="recite" aria-label="Чтение Корана">' + I.moon + '</button>' : '') +
-      '<button class="fab' + (tts.hasNeural(it.en) ? ' hq' : '') + '" data-act="tts" aria-label="Послушать">' + I.vol + '</button>' +
+      '<button class="fab' + (tts.hasNeural(it.en) ? ' hq' : '') + tts.proAttr(it.en) + '" data-act="tts" aria-label="Послушать">' + I.vol + '</button>' +
       '<button class="fab" data-act="words" aria-label="Слова">' + I.words + ((it.w || []).length ? '<i>' + it.w.length + '</i>' : '') + '</button>' +
       '<button class="fab" data-act="share" aria-label="Поделиться">' + I.share + '</button>' +
       '</div>';
@@ -1584,6 +1597,13 @@
       var head = h('div', { class: 'reader-head' });
       head.innerHTML = '<div class="t serif">' + esc(s.title) + '</div><div class="m">' + lvChip(s.l) + ' ' + esc(s.author) + (s.year ? ' · ' + esc(s.year) : '') + ' · ' + s.minutes + ' мин · ' + s.paras.length + ' абзацев</div><div class="ab">' + esc(s.about) + '</div>';
       body.appendChild(head);
+      // Рассказ озвучен диктором Dan — подпись (и требование бесплатного тарифа ElevenLabs указывать источник)
+      try {
+        if (window.InkVoice && window.InkVoice.ready) window.InkVoice.ready().then(function () {
+          var vi = tts.voiceInfo(tts.voiceOf(s.paras[0].en));
+          if (vi && !$('.voice-by', head)) head.appendChild(h('div', { class: 'voice-by' }, vi.chip));
+        });
+      } catch (e) {}
       var seg = h('div', { class: 'seg' });
       [['think', '🤔 Сначала сам'], ['parallel', '📖 Параллельно']].forEach(function (m) {
         var b = h('button', { class: mode === m[0] ? 'on' : '' }, m[1]);
@@ -2814,6 +2834,18 @@
       box.appendChild(switchRow('Автолистание', 'После оценки переходить к следующей карточке', 'auto'));
       box.appendChild(switchRow('☪️ Ислам в общей ленте', 'Аяты и хадисы среди обычных карточек (никогда — в смешном и жутком)', 'islamFeed'));
       body.appendChild(box);
+      var vline = h('div', { class: 'sub', style: 'margin:8px 4px 0;font-size:12.5px' }, '🎙 Голоса: Ava и Andrew — нейроголоса Microsoft.');
+      body.appendChild(vline);
+      try {
+        if (window.InkVoice && window.InkVoice.ready) window.InkVoice.ready().then(function () {
+          var t = window.InkVoice.tags ? window.InkVoice.tags() : {};
+          var parts = Object.keys(t).sort(function (a, b) { return t[b] - t[a]; }).map(function (k) {
+            var vi = tts.voiceInfo(k); return vi ? vi.chip.replace('🎙 Читает ', '').replace(' · голос ', ' — ') : '';
+          }).filter(Boolean);
+          parts.push('Ava и Andrew — Microsoft');
+          vline.textContent = '🎙 Голоса: ' + parts.join(' · ') + '. Значок на кнопке звука показывает голос диктора.';
+        });
+      } catch (e) {}
 
       body.appendChild(h('h2', {}, '🎯 Мой уровень'));
       var lb = h('div', { class: 'surface', style: 'overflow:hidden' });
@@ -2909,7 +2941,7 @@
   // =====================================================================
   // 18. Старт
   // =====================================================================
-  var APP_VER = 3;
+  var APP_VER = 4;
   function start() {
     applyTheme();
     syncFinds();
@@ -2930,6 +2962,8 @@
         $$('.fcard[data-id]').forEach(function (el) {
           var it = BY_ID[el.getAttribute('data-id')], b = el.querySelector('[data-act=tts]');
           if (it && b && tts.hasNeural(it.en)) b.classList.add('hq');
+          var vi = it && b && tts.voiceInfo(tts.voiceOf(it.en));
+          if (vi) { b.classList.add('pro'); b.setAttribute('data-v', vi.badge); }
         });
       });
     } catch (e) {}
@@ -2951,6 +2985,8 @@
       ['🎧', 'Живой голос', 'Нейроголос читает карточки и рассказы и подсвечивает каждое слово, как караоке. Диктант, обратный перевод и аудио-режим в ленте.'],
       ['🛠', 'Твои инструменты', '«Мой текст» — вставь любой английский текст. «Мои находки» — сохраняй фразы из любимых аниме. «Занятие на сегодня» — 6 коротких шагов каждый день.']
     ];
+    if ((S.ver || 0) >= 3) slides = [];  // большое обновление уже видели — покажем только новое
+    slides.push(['🎙', 'Живые голоса дикторов', 'Пять басен Эзопа читает диктор Dan (ElevenLabs), а рассказы, «Основы» и карточки постепенно переходят на Algieba — очень чёткий голос нейросети Google: за несколько дней он озвучит всё приложение. Значок на кнопке звука показывает, кто читает.']);
     var i = 0;
     var L = h('section', { class: 'layer', style: 'z-index:70' });
     document.body.appendChild(L);
