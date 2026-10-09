@@ -96,18 +96,39 @@
     eye: svg('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'),
     gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
     trash: svg('<path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/>'),
-    play: svg('<path d="m6 4 14 8-14 8z"/>')
+    play: svg('<path d="m6 4 14 8-14 8z"/>'),
+    moon: svg('<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/><path d="m17 3 .7 1.6L19.3 5l-1.6.7L17 7.3l-.7-1.6L14.7 5l1.6-.4z"/>'),
+    pen: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+    star: svg('<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>'),
+    head: svg('<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="2" y="14" width="5" height="7" rx="2"/><rect x="17" y="14" width="5" height="7" rx="2"/>'),
+    cap: svg('<path d="M22 9 12 4 2 9l10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/>'),
+    layers: svg('<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>')
   };
 
   // =====================================================================
   // 2. Данные и индексы
   // =====================================================================
   var CATS = D.cats, MOODS = D.moods, ITEMS = D.items, STORIES = D.stories, GLOSS = D.glossary;
+  var LEARN = window.LEARN_DATA || { course: [], grammar: [], test: [] };
+  // Свои находки пользователя — отдельный раздел, живёт только в состоянии
+  CATS.push({ key: 'mine', name: 'Мои находки', emoji: '⭐', color: '#facc15', desc: 'Фразы, которые ты сам нашёл в аниме, играх и книгах', g: 'main' });
   var CAT = {}, MOOD = {}, BY_ID = {}, BY_CAT = {};
   CATS.forEach(function (c) { CAT[c.key] = c; BY_CAT[c.key] = []; });
   MOODS.forEach(function (m) { MOOD[m.key] = m; });
   ITEMS.forEach(function (it) { BY_ID[it.id] = it; if (BY_CAT[it.c]) BY_CAT[it.c].push(it); });
   var STORY = {}; STORIES.forEach(function (s) { STORY[s.id] = s; });
+  function grp(it) { var c = CAT[it.c]; return c ? c.g : 'main'; }
+  function isIslam(it) { return grp(it) === 'islam'; }
+  var MAIN_CATS = CATS.filter(function (c) { return c.g === 'main' && c.key !== 'mine'; });
+  var ISLAM_CATS = CATS.filter(function (c) { return c.g === 'islam'; });
+  // Уровни CEFR
+  var CEFR = ['', 'A1', 'A2', 'B1', 'B2', 'C1'];
+  var CEFR_NAME = ['', 'Новичок', 'Начальный', 'Средний', 'Выше среднего', 'Продвинутый'];
+  var CEFR_COLOR = ['', '#22c55e', '#84cc16', '#eab308', '#f97316', '#ef4444'];
+  function lvChip(l) { return '<span class="cefr" style="--lc:' + CEFR_COLOR[l || 1] + '">' + CEFR[l || 1] + '</span>'; }
+  var COURSE = LEARN.course || [], GRAMMAR = LEARN.grammar || [], LTEST = LEARN.test || [];
+  var COURSE_IDX = {}; COURSE.forEach(function (c, i) { COURSE_IDX[c[0]] = i; });
+  var DAY_SIZE = 10, COURSE_DAYS = Math.ceil(COURSE.length / DAY_SIZE);
 
   // Индекс глоссария по отдельным словам: "sink (sank)" -> sink, sank
   var TOK = {};
@@ -147,9 +168,16 @@
       v: 1, seen: {}, rate: {}, fav: {}, words: {}, xp: 0, days: {}, goalDays: {},
       streak: { cur: 0, best: 0, last: 0 }, quiz: { best: 0, perfect: 0, played: 0 },
       stories: {}, ach: {}, trHist: [],
-      st: { self: 0, partial: 0, miss: 0, tts: 0, tr: 0, qc: 0, rev: 0, night: 0, early: 0, dark: 0, touch: 0, anime: 0 },
-      set: { theme: 'auto', font: 1, goal: 15, rate: 0.9, hide: true, auto: true },
-      onb: false, upd: 0
+      st: { self: 0, partial: 0, miss: 0, tts: 0, tr: 0, qc: 0, rev: 0, night: 0, early: 0, dark: 0, touch: 0, anime: 0, faith: 0, dict: 0, back: 0, gram: 0 },
+      set: { theme: 'auto', font: 1, goal: 15, rate: 0.9, hide: true, auto: true, islamFeed: false, karaoke: true },
+      onb: false, upd: 0,
+      lvl: 0,                 // уровень CEFR 1..5 (0 — ещё не выбран)
+      course: { done: {} },   // курс «1000 слов»: номер дня -> время прохождения
+      gram: {},               // уроки грамматики: id -> { s: лучший результат, n: вопросов, t: время }
+      finds: [],              // мои находки: { id, en, ru, src, at }
+      texts: [],              // мои тексты: { id, title, text, at }
+      plan: {},               // занятие дня: шаг -> номер дня
+      ver: 0                  // какое «Что нового» уже показано
     };
   }
   function mergeState(base, s) {
@@ -275,6 +303,7 @@
     if (it.t.indexOf('dark') >= 0 || it.t.indexOf('creepy') >= 0) S.st.dark++;
     if (it.t.indexOf('touching') >= 0) S.st.touch++;
     if (it.c === 'anime') S.st.anime++;
+    if (isIslam(it)) S.st.faith++;
     S.xp += 1;
     checkAch();
     save();
@@ -326,7 +355,7 @@
     ['dark', '🖤', 'Тёмная сторона', '20 мрачных или жутких', function () { return S.st.dark >= 20; }],
     ['touch', '🥹', 'Мягкое сердце', '20 трогательных', function () { return S.st.touch >= 20; }],
     ['otaku', '🌸', 'Отаку', '50 цитат из аниме', function () { return S.st.anime >= 50; }],
-    ['explorer', '🧭', 'Исследователь', 'Заглянуть во все разделы', function () { return catsTouched() >= CATS.length; }],
+    ['explorer', '🧭', 'Исследователь', 'Заглянуть во все разделы', function () { return catsTouched() >= MAIN_CATS.length; }],
     ['night', '🌙', 'Ночная сова', 'Учиться после полуночи', function () { return S.st.night >= 1; }],
     ['early', '🌅', 'Ранняя пташка', 'Учиться до 8 утра', function () { return S.st.early >= 1; }],
     ['st3', '✨', 'Огонёк', '3 дня подряд', function () { return S.streak.best >= 3; }],
@@ -343,7 +372,16 @@
     ['goal', '✅', 'Цель дня', 'Выполнить дневную цель', function () { return Object.keys(S.goalDays).length >= 1; }],
     ['rev', '🔁', 'Мать учения', '50 повторений', function () { return S.st.rev >= 50; }],
     ['lv5', '🎓', 'Знаток', 'Достичь 6 уровня', function () { return levelInfo(S.xp).n >= 6; }],
-    ['quiz5', '🕹', 'Игроман', 'Сыграть 5 квизов', function () { return S.quiz.played >= 5; }]
+    ['quiz5', '🕹', 'Игроман', 'Сыграть 5 квизов', function () { return S.quiz.played >= 5; }],
+    ['test', '🎯', 'Знаю свой уровень', 'Пройти тест уровня', function () { return S.lvl > 0; }],
+    ['course1', '🧱', 'Первые кирпичи', 'Пройти день курса «1000 слов»', function () { return Object.keys(S.course.done).length >= 1; }],
+    ['course10', '🏗', 'Строитель', '10 дней курса «1000 слов»', function () { return Object.keys(S.course.done).length >= 10; }],
+    ['course50', '🏰', 'Крепость слов', '50 дней курса «1000 слов»', function () { return Object.keys(S.course.done).length >= 50; }],
+    ['gram1', '📘', 'Первое правило', 'Пройти урок грамматики', function () { return Object.keys(S.gram).length >= 1; }],
+    ['gram10', '📗', 'Знаток правил', '10 уроков грамматики', function () { return Object.keys(S.gram).length >= 10; }],
+    ['faith', '🤲', 'Свет знания', '20 аятов, хадисов и дуа', function () { return S.st.faith >= 20; }],
+    ['dict', '✍️', 'Писарь', '10 диктантов или обратных переводов', function () { return S.st.dict + S.st.back >= 10; }],
+    ['find', '⭐', 'Охотник за фразами', 'Добавить свою находку', function () { return S.finds.length >= 1; }]
   ];
   function checkAch() {
     ACH.forEach(function (a) {
@@ -381,36 +419,84 @@
       try { window.speechSynthesis.onvoiceschanged = load; } catch (e) {}
     },
     stop: function () {
+      tts.tok = null;
+      try { if (window.InkVoice && window.InkVoice.stop) window.InkVoice.stop(); } catch (e) {}
       try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
       if (tts.audio) { try { tts.audio.pause(); } catch (e) {} tts.audio = null; }
       tts.queue = [];
+      tts.reciteTok = null;
+      tts.unmark();
       if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; }
     },
-    speak: function (text, btn, rate) {
+    kel: null, kcur: null, reciteTok: null,
+    // Караоке: подсветка слова, которое сейчас звучит (i — номер слова-span .w внутри kel)
+    mark: function (i) {
+      if (!tts.kel) return;
+      var w = tts.kel.querySelectorAll('.w')[i];
+      if (tts.kcur && tts.kcur !== w) tts.kcur.classList.remove('say');
+      if (w) { w.classList.add('say'); tts.kcur = w; }
+    },
+    unmark: function () { if (tts.kcur) tts.kcur.classList.remove('say'); tts.kcur = null; tts.kel = null; },
+    // Есть ли качественная (нейро) запись для текста
+    hasNeural: function (text) { try { return !!(window.InkVoice && window.InkVoice.has && window.InkVoice.has(String(text))); } catch (e) { return false; } },
+    // text — английский текст; btn — кнопка (мигает во время речи); rate — скорость; el — где подсвечивать слова
+    speak: function (text, btn, rate, el, onEnd) {
       tts.stop();
-      text = String(text).replace(/\n+/g, ' ').replace(/[“”«»]/g, '"').replace(/—/g, ', ').trim();
-      if (!text) return;
+      var raw = String(text == null ? '' : text);
+      if (!raw.trim()) return;
+      text = raw.replace(/\n+/g, ' ').replace(/[“”«»]/g, '"').replace(/—/g, ', ').trim();
       S.st.tts++; checkAch(); save();
       if (btn) { tts.btn = btn; btn.classList.add('playing'); }
-      var done = function () { if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; } };
+      if (el && S.set.karaoke !== false) tts.kel = el;
+      var r = rate || S.set.rate || 0.9;
+      var tok = tts.tok = {};
+      // done срабатывает только для текущей озвучки (старые события после stop() игнорируются)
+      var done = function () {
+        if (tts.tok !== tok) return;
+        tts.tok = null; tts.unmark();
+        if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; }
+        if (onEnd) onEnd();
+      };
+      // 1) Нейроголос (заранее записанный, с таймингами слов)
+      if (window.InkVoice && window.InkVoice.play) {
+        try {
+          if (window.InkVoice.play(raw, {
+            rate: r,
+            onWord: function (i) { if (tts.tok === tok) tts.mark(i); },
+            onEnd: done,
+            onFail: function () { if (tts.tok === tok) fallback(); }
+          })) return;
+        } catch (e) {}
+      }
+      fallback();
+      function fallback() {
+      // 2) Голос устройства
       if (tts.voices.length) {
         try {
+          var starts = [], m, re = /[A-Za-z][A-Za-z'’]*/g;
+          while ((m = re.exec(text))) starts.push(m.index);
           var u = new SpeechSynthesisUtterance(text);
           u.voice = tts.voices[0]; u.lang = tts.voices[0].lang;
-          u.rate = rate || S.set.rate; u.onend = done; u.onerror = done;
+          u.rate = r; u.onend = done; u.onerror = done;
+          u.onboundary = function (ev) {
+            if (ev.name && ev.name !== 'word') return;
+            var k = 0; while (k + 1 < starts.length && starts[k + 1] <= ev.charIndex) k++;
+            tts.mark(k);
+          };
           window.speechSynthesis.speak(u);
           return;
         } catch (e) {}
       }
-      // Запасной вариант: голос Google (если в WebView нет встроенных голосов)
+      // 3) Запасной вариант: голос Google (если в WebView нет встроенных голосов)
       tts.queue = chunk(text, 180);
       var next = function () {
         if (!tts.queue.length) return done();
-        var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&ttsspeed=' + ((rate || S.set.rate) < 0.85 ? 0.6 : 1) + '&q=' + encodeURIComponent(tts.queue.shift()));
+        var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&ttsspeed=' + (r < 0.85 ? 0.6 : 1) + '&q=' + encodeURIComponent(tts.queue.shift()));
         tts.audio = a; a.onended = next; a.onerror = function () { done(); toast('Озвучка недоступна на этом устройстве 😕'); };
         a.play().catch(function () { done(); });
       };
       next();
+      }
     }
   };
   function chunk(text, max) {
@@ -424,6 +510,62 @@
     return out;
   }
   tts.init();
+
+  // Чтение Корана (Мишари Рашид Аль-Афаси, everyayah.com): аяты по порядку
+  function pad3(n) { return ('00' + n).slice(-3); }
+  function recite(vk, btn) {
+    tts.stop();
+    if (!vk) return;
+    var s = vk[0], a = vk[1], b = vk[2] || vk[1];
+    if (btn) { tts.btn = btn; btn.classList.add('playing'); }
+    var tok = tts.reciteTok = {};
+    var done = function () { if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; } };
+    var next = function () {
+      if (a > b || tts.reciteTok !== tok) return done();
+      var au = new Audio('https://everyayah.com/data/Alafasy_128kbps/' + pad3(s) + pad3(a) + '.mp3');
+      tts.audio = au; a++;
+      au.onended = next;
+      au.onerror = function () { done(); toast('Нет связи с сервером чтения Корана 😕'); };
+      au.play().catch(function () { done(); });
+    };
+    S.st.faith++; save();
+    next();
+  }
+  function openLink(url) { if (inTG && tg.openLink) tg.openLink(url); else window.open(url, '_blank'); }
+  function refURL(ref) {
+    var m = /^quran:(\d+):(\d+)/.exec(ref || '');
+    if (m) return 'https://quran.com/' + m[1] + '/' + m[2];
+    return 'https://sunnah.com/' + ref;
+  }
+  function openRef(ref) { if (ref) openLink(refURL(ref)); }
+  var REF_NAMES = { bukhari: 'Сахих аль-Бухари', muslim: 'Сахих Муслим', nawawi40: '40 хадисов ан-Навави', riyadussalihin: 'Рияд ас-Салихин', tirmidhi: 'Сунан ат-Тирмизи', abudawud: 'Сунан Абу Дауда', ibnmajah: 'Сунан Ибн Маджа', nasai: 'Сунан ан-Насаи', adab: 'Аль-Адаб аль-Муфрад' };
+  function refLabel(ref) {
+    var m = /^quran:(\d+):(\d+)(?:-(\d+))?/.exec(ref || '');
+    if (m) return 'Коран ' + m[1] + ':' + m[2] + (m[3] ? '–' + m[3] : '');
+    var p = String(ref || '').split(':');
+    return (REF_NAMES[p[0]] || p[0]) + (p[1] ? ', ' + p[1] : '');
+  }
+
+  // Произношение слова: транскрипция и живой голос из Free Dictionary API (dictionaryapi.dev)
+  var pronCache = {};
+  function pronounce(word) {
+    var w = word.toLowerCase();
+    if (pronCache[w]) return Promise.resolve(pronCache[w]);
+    return fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w)).then(function (r) {
+      if (!r.ok) throw 0; return r.json();
+    }).then(function (j) {
+      var out = { ipa: '', audio: '' };
+      (j || []).forEach(function (e) {
+        (e.phonetics || []).forEach(function (p) {
+          if (!out.ipa && p.text) out.ipa = p.text;
+          if (p.audio && (!out.audio || /-uk\.mp3$/.test(p.audio))) out.audio = p.audio;
+        });
+        if (!out.ipa && e.phonetic) out.ipa = e.phonetic;
+      });
+      pronCache[w] = out;
+      return out;
+    });
+  }
 
   // =====================================================================
   // 7. Перевод (онлайн) и поиск слов
@@ -555,7 +697,8 @@
     var body = h('div', { class: 'layer-body' });
     L.appendChild(head); L.appendChild(body);
     $('#layers').appendChild(L);
-    stack.push({ el: L, onClose: opts.onClose });
+    // live: экран пересобирается, когда к нему возвращаются (например, курс после пройденного дня)
+    stack.push({ el: L, onClose: opts.onClose, live: opts.live ? function () { body.innerHTML = ''; build(body, L); } : null });
     syncBack();
     build(body, L);
     return L;
@@ -580,6 +723,8 @@
     if (top.bd) top.bd.classList.add('out');
     setTimeout(function () { top.el.remove(); if (top.bd) top.bd.remove(); }, 230);
     if (top.onClose) top.onClose();
+    var nt = stack[stack.length - 1];
+    if (nt && nt.live && !top.bd) { try { nt.live(); } catch (e) {} }
     syncBack();
   }
   function closeAll() { while (stack.length) popLayer(); }
@@ -620,13 +765,21 @@
     var moods = (it.t || []).map(function (t) { return MOOD[t] ? '<span class="mood" title="' + esc(MOOD[t].name) + '">' + MOOD[t].emoji + '</span>' : ''; }).join('');
     var showTitle = (it.c === 'poems' || it.c === 'russian') && it.s;
     var who = whoLine(showTitle ? { a: it.a } : it);
+    var islam = isIslam(it);
+    if (islam) el.classList.add('islamic');
+    var arBlock = it.ar ? '<div class="fc-ar' + (it.c === 'names' ? ' big' : '') + '" dir="rtl" lang="ar">' + esc(it.ar) + '</div>' : '';
+    var trBlock = it.tr ? '<div class="fc-tr">' + esc(it.tr) + '</div>' : '';
+    var srcBtns = (it.ref ? '<button class="srcbtn" data-act="src">' + I.globe + ' ' + (it.ref.indexOf('quran:') === 0 ? 'quran.com' : 'sunnah.com') + '</button>' : '') +
+      (it.wbw ? '<button class="srcbtn" data-act="wbw">' + I.words + ' По словам</button>' : '');
     el.innerHTML =
       '<div class="fc-head"><span class="badge">' + c.emoji + ' ' + esc(c.name) + '</span>' + moods +
-      '<span class="lvl" title="Сложность">' + '●●●'.slice(0, it.l) + '○○○'.slice(0, 3 - it.l) + '</span></div>' +
+      '<span class="lvl" title="Уровень сложности">' + lvChip(it.l) + '</span></div>' +
       '<div class="fc-body"><div class="fc-inner">' +
       (showTitle ? '<div class="fc-title">' + esc(it.s) + '</div>' : '') +
-      '<div class="fc-en serif" style="--en-size:' + enSize(it) + 'px">' + wordsHTML(it.en, it.w) + '</div>' +
+      arBlock + trBlock +
+      '<div class="fc-en serif' + (islam ? ' sm' : '') + '" style="--en-size:' + enSize(it) + 'px">' + wordsHTML(it.en, it.w) + '</div>' +
       (who ? '<div class="fc-who">— ' + who + '</div>' : '') +
+      (srcBtns ? '<div class="srcrow">' + srcBtns + '</div>' : '') +
       '<div class="veil' + (open ? ' open' : '') + '"><div class="flag">Перевод</div><div class="ru serif">' + esc(it.ru) + '</div>' +
       '<div class="cover">🤔 Сначала переведи в голове<b>Нажми, чтобы проверить себя</b></div></div>' +
       '<div class="after' + (open ? '' : ' hidden') + '">' +
@@ -636,21 +789,32 @@
       '</div></div>' +
       '<div class="fc-side">' +
       '<button class="fab fav' + (S.fav[it.id] ? ' on' : '') + '" data-act="fav" aria-label="В избранное">' + I.heart + '</button>' +
-      '<button class="fab" data-act="tts" aria-label="Послушать">' + I.vol + '</button>' +
+      (it.vk ? '<button class="fab recite" data-act="recite" aria-label="Чтение Корана">' + I.moon + '</button>' : '') +
+      '<button class="fab' + (tts.hasNeural(it.en) ? ' hq' : '') + '" data-act="tts" aria-label="Послушать">' + I.vol + '</button>' +
       '<button class="fab" data-act="words" aria-label="Слова">' + I.words + ((it.w || []).length ? '<i>' + it.w.length + '</i>' : '') + '</button>' +
       '<button class="fab" data-act="share" aria-label="Поделиться">' + I.share + '</button>' +
       '</div>';
 
+    if (opts.listen) {
+      el.classList.add('listen');
+      el.querySelector('.fc-en').insertAdjacentHTML('afterend', '<div class="listen-hint">🎧 Слушай и попробуй понять на слух.<b>Нажми, чтобы увидеть текст</b></div>');
+    }
     var lastTap = 0;
     el.addEventListener('click', function (e) {
       var t = e.target;
+      if (el.classList.contains('listen') && (t.closest('.fc-en') || t.closest('.listen-hint'))) {
+        el.classList.remove('listen'); haptic('light'); return;
+      }
       var w = t.closest('.w');
       if (w) { wordSheet(w.textContent, it, w); return; }
       var act = t.closest('[data-act]');
       if (act) {
         var a = act.getAttribute('data-act');
         if (a === 'fav') toggleFav(it, act);
-        else if (a === 'tts') { if (act.classList.contains('playing')) tts.stop(); else tts.speak(it.en, act); }
+        else if (a === 'tts') { if (act.classList.contains('playing')) tts.stop(); else tts.speak(it.en, act, null, el.querySelector('.fc-en')); }
+        else if (a === 'recite') { if (act.classList.contains('playing')) tts.stop(); else recite(it.vk, act); }
+        else if (a === 'src') openRef(it.ref);
+        else if (a === 'wbw') wbwSheet(it);
         else if (a === 'words') wordsSheet(it);
         else if (a === 'share') share(it);
         return;
@@ -711,8 +875,13 @@
       sh.classList.add('wordsheet');
       var key = found ? found.en : word.toLowerCase();
       var inDict = function () { return !!S.words[key.toLowerCase()]; };
+      var ci = COURSE_IDX[key.toLowerCase()];
+      if (ci == null) ci = COURSE_IDX[word.toLowerCase()];
+      var cIpa = ci != null && COURSE[ci][2] ? '/' + COURSE[ci][2] + '/' : '';
       sh.innerHTML += '<div class="big serif">' + esc(word) + '</div>' +
+        '<div class="ipa">' + esc(cIpa) + '</div>' +
         '<div class="tr">' + (found ? esc(found.ru) : '<span class="muted">Ищу перевод…</span>') + '</div>' +
+        (ci != null ? '<div class="src">🧱 Слово №' + (ci + 1) + ' из курса «1000 главных слов»</div>' : '') +
         '<div class="src">' + (found ? (found.en.toLowerCase() !== word.toLowerCase() ? 'Форма слова: <b>' + esc(found.en) + '</b> · ' : '') + esc(found.src) : '') + '</div>' +
         '<div class="actions"></div>' +
         (it ? '<div class="ctx serif">' + highlightIn(it.en, word) + '</div>' : '');
@@ -728,6 +897,15 @@
       var bG = h('button', { class: 'btn sm ghost' }, I.globe + ' Google');
       bG.addEventListener('click', function () { openGoogleTranslate(word); });
       acts.appendChild(bSay); acts.appendChild(bAdd); acts.appendChild(bG);
+      // Транскрипция и живой голос (запись человека) из открытого словаря
+      if (/^[a-z][a-z'-]*$/i.test(word)) pronounce(word.replace(/'s$/i, '')).then(function (p) {
+        if (p.ipa && !cIpa) sh.querySelector('.ipa').textContent = p.ipa;
+        if (p.audio) {
+          var bLive = h('button', { class: 'btn sm' }, '🎙 Живой голос');
+          bLive.addEventListener('click', function () { tts.stop(); var a = new Audio(p.audio); tts.audio = a; a.playbackRate = 1; a.play().catch(function () {}); });
+          acts.insertBefore(bLive, bAdd);
+        }
+      }).catch(function () {});
       if (!found) {
         translateText(word).then(function (out) {
           sh.querySelector('.tr').textContent = out;
@@ -757,6 +935,20 @@
       sh.appendChild(h('div', { class: 'note' }, '👆 Подсказка: нажми на <b>любое</b> слово в тексте карточки, чтобы увидеть перевод.'));
     });
   }
+  // Аят по словам: арабское слово — транслитерация — английский смысл (из quran.com)
+  function wbwSheet(it) {
+    openSheet(function (sh) {
+      sh.appendChild(h('h2', { style: 'margin-top:4px' }, '🔍 Аят по словам'));
+      sh.appendChild(h('div', { class: 'sub', style: 'margin-bottom:12px' }, 'Каждое арабское слово и его смысл по-английски. Английские слова тоже можно учить!'));
+      var list = h('div', { class: 'wbw' });
+      (it.wbw || []).forEach(function (w) {
+        list.appendChild(h('div', { class: 'wbw-row' }, '<div class="a" dir="rtl" lang="ar">' + esc(w[0]) + '</div><div class="t">' + esc(w[1]) + '</div><div class="e">' + esc(w[2]) + '</div>'));
+      });
+      sh.appendChild(list);
+      sh.appendChild(h('div', { class: 'note' }, '📖 Перевод слов — quran.com (word by word). ' + esc(refLabel(it.ref))));
+    });
+  }
+
   function wordRow(en, ru, ctx, opts) {
     opts = opts || {};
     var row = h('div', { class: 'wrow' });
@@ -784,7 +976,7 @@
   // 10. Навигация по вкладкам
   // =====================================================================
   var TABS = [
-    ['home', 'Главная', I.home], ['feed', 'Лента', I.feed], ['library', 'Читалка', I.book],
+    ['home', 'Главная', I.home], ['feed', 'Лента', I.feed], ['library', 'Библиотека', I.book],
     ['practice', 'Тренировка', I.target], ['profile', 'Профиль', I.user]
   ];
   var curTab = null;
@@ -852,13 +1044,56 @@
     return (u && u.first_name) || 'друг';
   }
   function dailyItem() {
-    var pool = ITEMS.filter(function (it) { return it.en.length < 260 && ['idioms', 'slang', 'twisters', 'riddles'].indexOf(it.c) < 0; });
+    var max = (S.lvl || 4) + 1;
+    var pool = ITEMS.filter(function (it) { return !isIslam(it) && it.c !== 'mine' && it.l <= max && it.en.length < 260 && ['idioms', 'slang', 'twisters', 'riddles', 'basics'].indexOf(it.c) < 0; });
+    if (!pool.length) pool = ITEMS.filter(function (it) { return !isIslam(it); });
     return pool[(today() * 7919) % pool.length];
   }
+  // Аят / хадис / дуа дня — одни и те же на весь день
+  function islamDaily(cat) {
+    var pool = BY_CAT[cat] || [];
+    if (!pool.length) return null;
+    var short = pool.filter(function (it) { return it.en.length < 320; });
+    var p = short.length ? short : pool;
+    return p[(today() * (cat === 'quran' ? 4099 : 2087)) % p.length];
+  }
   function dailyWord() {
+    if (COURSE.length) { var c = COURSE[(today() * 104729) % Math.min(COURSE.length, 600)]; return { en: c[0], ru: c[1], ipa: c[2] }; }
     var keys = Object.keys(GLOSS).filter(function (k) { return /^[a-z][a-z-]{3,}$/.test(k); });
     var k = keys[(today() * 104729) % keys.length];
     return { en: k, ru: GLOSS[k] };
+  }
+  function seenToday() {
+    var t0 = new Date(); t0.setHours(0, 0, 0, 0); t0 = t0.getTime();
+    var n = 0; for (var k in S.seen) if (S.seen[k] >= t0) n++;
+    return n;
+  }
+  function planDone(step) { return S.plan[step] === today(); }
+  function markPlan(step) {
+    if (S.plan[step] === today()) return;
+    S.plan[step] = today(); save();
+    checkPlanBonus();
+  }
+  function checkPlanBonus() {
+    if (S.plan.bonus === today() || !PLAN.every(function (p) { return planStatus(p[0]); })) return;
+    S.plan.bonus = today(); S.xp += 30; save();
+    setTimeout(function () { confetti(); toast('🏆 Занятие дня выполнено полностью! +30 XP', 'big'); haptic('success'); }, 500);
+  }
+  function nextLesson() { for (var i = 0; i < GRAMMAR.length; i++) if (!S.gram[GRAMMAR[i].id]) return GRAMMAR[i]; return GRAMMAR[0]; }
+  function courseDay() { var n = 0; while (S.course.done[n]) n++; return Math.min(n, COURSE_DAYS - 1); }
+  // Занятие дня: 6 шагов по методике «слова → повторение → правило → чтение → слух → вера»
+  var PLAN = [
+    ['words', '🧱', 'Новые слова', function () { return 'День ' + (courseDay() + 1) + ' курса «1000 слов» · 10 слов'; }, function () { openCourse(); }],
+    ['review', '🔁', 'Повторение', function () { var d = dueCount(); return d ? d + ' на повторение' : 'Всё повторено — отлично!'; }, function () { startReview(); }],
+    ['gram', '📘', 'Правило дня', function () { var l = nextLesson(); return l ? l.title : ''; }, function () { var l = nextLesson(); if (l) openLesson(l.id); }],
+    ['read', '📖', 'Чтение', function () { return 'Прочитай 10 карточек своего уровня · ' + Math.min(10, seenToday()) + '/10'; }, function () { openFeed(myFeed()); }],
+    ['listen', '🎧', 'Слушание', function () { return 'Диктант: услышь и напиши 5 фраз'; }, function () { startQuiz('dict'); }],
+    ['faith', '☪️', 'Аят и хадис дня', function () { return 'Коран и Сунна — по-английски'; }, function () { openIslam(); }]
+  ];
+  function planStatus(step) {
+    if (step === 'review' && !dueCount() && Object.keys(S.rate).length + Object.keys(S.words).length > 0) return true;
+    if (step === 'read' && seenToday() >= 10) return true;
+    return planDone(step);
   }
   function ringSVG(pct, size, stroke) {
     var r = (size - stroke) / 2, cf = 2 * Math.PI * r;
@@ -880,38 +1115,87 @@
       '</div><div class="minis"><span class="mini">🔥 ' + streakNow() + ' ' + plural(streakNow(), 'день', 'дня', 'дней') + '</span><span class="mini">📖 ' + seenCount() + ' прочитано</span><span class="mini">📒 ' + Object.keys(S.words).length + ' ' + plural(Object.keys(S.words).length, 'слово', 'слова', 'слов') + '</span></div>' +
       '<div class="goalbar"><div class="row"><span>Цель дня</span><span>' + Math.min(done, goal) + ' / ' + goal + (done >= goal ? ' ✅' : '') + '</span></div><div class="bar"><i style="width:' + Math.min(100, done / goal * 100) + '%"></i></div></div>' +
       '</div>' +
+      '<div id="lvlbox"></div>' +
+      '<h2>📅 Занятие на сегодня <span class="faint" id="plancnt" style="text-transform:none;letter-spacing:0"></span></h2><div class="surface plan" id="plan"></div>' +
       '<h2>✨ Находка дня</h2><div id="daily"></div>' +
+      (ISLAM_CATS.some(function (c) { return BY_CAT[c.key].length; }) ? '<h2>☪️ Ислам <button data-go="islam">Все разделы</button></h2><div id="islambox"></div>' : '') +
       '<h2>⚡ Быстрый старт</h2>' +
       '<div class="qgrid">' +
       '<button class="qbtn" data-go="feed"><b>▶️</b>Лента</button>' +
+      '<button class="qbtn" data-go="course"><b>🧱</b>1000 слов</button>' +
+      '<button class="qbtn" data-go="grammar"><b>📘</b>Грамматика</button>' +
+      '<button class="qbtn" data-go="basics"><b>🌱</b>Основы</button>' +
+      '<button class="qbtn" data-go="anime"><b>🌸</b>Аниме</button>' +
       '<button class="qbtn" data-go="review"><b>🔁</b>Повторить' + (due ? '<span class="cnt">' + due + '</span>' : '') + '</button>' +
-      '<button class="qbtn" data-go="practice"><b>🎯</b>Квизы</button>' +
-      '<button class="qbtn" data-go="stories"><b>📖</b>Рассказы</button>' +
+      '<button class="qbtn" data-go="mytext"><b>📥</b>Мой текст</button>' +
+      '<button class="qbtn" data-go="finds"><b>⭐</b>Находки</button>' +
       '<button class="qbtn" data-go="translator"><b>🌍</b>Переводчик</button>' +
-      '<button class="qbtn" data-go="dict"><b>📒</b>Мой словарь</button>' +
       '</div>' +
       '<h2>🗂 Разделы <button data-go="library">Все</button></h2><div class="hscroll" id="cats"></div>' +
       '<h2>🎭 Настроение</h2><div class="chips" id="moods"></div>' +
       '<h2>💎 Слово дня</h2><div id="wday"></div>' +
-      '<h2>🧭 Совет дня</h2><div class="surface tip"><b>' + TIPS[t % TIPS.length][0] + '</b><div>' + TIPS[t % TIPS.length][1] + '</div></div>';
+      '<h2>🧭 Совет дня</h2><div class="surface tip"><b>' + TIPS[t % TIPS.length][0] + '</b><div>' + TIPS[t % TIPS.length][1] + '</div></div>' +
+      '<button class="surface methodbtn" data-go="method"><b>🧪</b><span><b>Как люди на самом деле учат языки</b>Что говорит наука — и как это устроено в Inkwell</span></button>';
+
+    // Уровень
+    var lb = $('#lvlbox', root);
+    if (S.lvl) {
+      lb.innerHTML = '<button class="surface lvlbox" data-go="test">' + lvChip(S.lvl) + '<span><b>Твой уровень: ' + CEFR[S.lvl] + ' · ' + CEFR_NAME[S.lvl] + '</b>Лента подбирает карточки ' + CEFR[S.lvl] + '–' + CEFR[Math.min(5, S.lvl + 1)] + '. Нажми, чтобы пройти тест заново.</span></button>';
+    } else {
+      lb.innerHTML = '<button class="surface lvlbox cta" data-go="test"><b class="em">🎯</b><span><b>Узнай свой уровень за 3 минуты</b>17 вопросов — и лента, курс и озвучка подстроятся под тебя</span></button>';
+    }
+
+    // Занятие дня
+    var plan = $('#plan', root), nDone = 0;
+    PLAN.forEach(function (p) {
+      var ok = planStatus(p[0]); if (ok) nDone++;
+      var row = h('button', { class: 'planrow' + (ok ? ' ok' : '') });
+      row.innerHTML = '<span class="pi">' + (ok ? '✓' : p[1]) + '</span><span class="pt"><b>' + p[2] + '</b><small>' + esc(p[3]()) + '</small></span><span class="pa">›</span>';
+      row.addEventListener('click', function () { haptic('light'); p[4](); });
+      plan.appendChild(row);
+    });
+    $('#plancnt', root).textContent = nDone + ' / ' + PLAN.length;
 
     var daily = dailyItem();
     var dc = cardEl(daily, { sheet: true });
     $('#daily', root).appendChild(dc);
 
+    // Ислам: аят и хадис дня
+    var ib = $('#islambox', root);
+    if (ib) {
+      [['quran', 'Аят дня'], ['hadith', 'Хадис дня']].forEach(function (k) {
+        var it = islamDaily(k[0]); if (!it) return;
+        var b = h('button', { class: 'surface iday' });
+        b.innerHTML = '<div class="k">' + CAT[k[0]].emoji + ' ' + k[1] + ' · ' + esc(refLabel(it.ref)) + '</div>' +
+          (it.ar ? '<div class="a" dir="rtl" lang="ar">' + esc(it.ar.length > 140 ? it.ar.slice(0, 140) + '…' : it.ar) + '</div>' : '') +
+          '<div class="e serif">' + esc(it.en.length > 160 ? it.en.slice(0, 157) + '…' : it.en) + '</div>';
+        b.addEventListener('click', function () { markPlan('faith'); itemSheet(it); });
+        ib.appendChild(b);
+      });
+      var row = h('div', { class: 'chips' });
+      ISLAM_CATS.forEach(function (c) {
+        if (!BY_CAT[c.key].length) return;
+        var cb = h('button', { class: 'chip' }, c.emoji + ' ' + c.name);
+        cb.addEventListener('click', function () { openCategory(c.key); });
+        row.appendChild(cb);
+      });
+      ib.appendChild(row);
+    }
+
     var cats = $('#cats', root);
-    CATS.forEach(function (c) { cats.appendChild(catTile(c)); });
+    MAIN_CATS.concat([CAT.basics]).filter(Boolean).forEach(function (c) { if (BY_CAT[c.key].length) cats.appendChild(catTile(c)); });
 
     var moods = $('#moods', root);
     MOODS.forEach(function (m) {
+      if (m.key === 'faith') return;
       var b = h('button', { class: 'chip' }, m.emoji + ' ' + m.name);
-      b.addEventListener('click', function () { openFeed({ cat: null, mood: m.key }); });
+      b.addEventListener('click', function () { openFeed({ cat: null, mood: m.key, lvl: S.lvl ? -1 : 0 }); });
       moods.appendChild(b);
     });
 
     var wd = dailyWord();
     var wbox = h('div', { class: 'surface wordday' });
-    wbox.innerHTML = '<div class="grow"><div class="w-en serif">' + esc(wd.en) + '</div><div class="w-ru">' + esc(wd.ru) + '</div></div>';
+    wbox.innerHTML = '<div class="grow"><div class="w-en serif">' + esc(wd.en) + '</div>' + (wd.ipa ? '<div class="w-ipa">/' + esc(wd.ipa) + '/</div>' : '') + '<div class="w-ru">' + esc(wd.ru) + '</div></div>';
     var s1 = h('button', { class: 'iconbtn' }, I.vol); s1.addEventListener('click', function () { tts.speak(wd.en, s1, 0.85); });
     var a1 = h('button', { class: 'iconbtn' + (S.words[wd.en] ? ' on' : '') }, S.words[wd.en] ? I.check : I.plus);
     a1.addEventListener('click', function () { if (addWord(wd.en, wd.ru)) { a1.innerHTML = I.check; a1.classList.add('on'); toast('📒 Слово дня в словаре'); } });
@@ -933,6 +1217,15 @@
     else if (where === 'translator') openTranslator();
     else if (where === 'dict') openDictionary();
     else if (where === 'settings') openSettings();
+    else if (where === 'course') openCourse();
+    else if (where === 'grammar') openGrammar();
+    else if (where === 'basics') openCategory('basics');
+    else if (where === 'anime') openAnimeTitles();
+    else if (where === 'mytext') openMyText();
+    else if (where === 'finds') openFinds();
+    else if (where === 'islam') openIslam();
+    else if (where === 'test') startLevelTest();
+    else if (where === 'method') openMethod();
   }
   function catTile(c) {
     var total = BY_CAT[c.key].length, seen = BY_CAT[c.key].filter(function (it) { return S.seen[it.id]; }).length;
@@ -945,17 +1238,27 @@
   // =====================================================================
   // 12. Лента
   // =====================================================================
-  var feedState = { filter: { cat: null, mood: null, lvl: 0 }, queue: [], rendered: 0, active: null, built: false };
+  // lvl: 0 — любой, -1 — «мой уровень» (свой и на ступень выше), 1..5 — ровно A1..C1; src — тайтл/источник
+  var feedState = { filter: { cat: null, mood: null, lvl: 0, src: null }, queue: [], rendered: 0, active: null, built: false, listen: false };
+  function myFeed() { return { cat: null, mood: null, lvl: S.lvl ? -1 : 0, src: null }; }
   function openFeed(filter, keepIfSame) {
-    var f = filter || { cat: null, mood: null, lvl: 0 };
-    var same = feedState.built && f.cat === feedState.filter.cat && f.mood === feedState.filter.mood && (f.lvl || 0) === (feedState.filter.lvl || 0);
-    feedState.filter = { cat: f.cat || null, mood: f.mood || null, lvl: f.lvl || 0 };
+    var f = filter || myFeed();
+    var cur = feedState.filter;
+    var same = feedState.built && f.cat == cur.cat && f.mood == cur.mood && (f.lvl || 0) === (cur.lvl || 0) && (f.src || null) === (cur.src || null);
+    feedState.filter = { cat: f.cat || null, mood: f.mood || null, lvl: f.lvl || 0, src: f.src || null };
     if (!(keepIfSame && same)) feedState.built = false;
     showTab('feed', feedState.built);
   }
   function feedMatches(it) {
     var f = feedState.filter;
-    return (!f.cat || it.c === f.cat) && (!f.mood || it.t.indexOf(f.mood) >= 0) && (!f.lvl || it.l === f.lvl);
+    if (f.cat && it.c !== f.cat) return false;
+    if (f.src && groupKey(it) !== f.src) return false;
+    if (f.mood && it.t.indexOf(f.mood) < 0) return false;
+    // Исламские карточки — только в своих разделах, в «Вере» и (по желанию) в общей ленте
+    if (isIslam(it) && !f.cat && f.mood !== 'faith' && (f.mood || !S.set.islamFeed)) return false;
+    if (f.lvl === -1) { if (it.l > (S.lvl || 1) + 1) return false; }
+    else if (f.lvl > 0 && it.l !== f.lvl) return false;
+    return true;
   }
   function buildQueue() {
     var arr = ITEMS.filter(feedMatches);
@@ -966,8 +1269,10 @@
   }
   function filterLabel() {
     var f = feedState.filter, parts = [];
-    if (f.cat) parts.push(CAT[f.cat].emoji + ' ' + CAT[f.cat].name);
-    if (f.lvl) parts.push(['', 'Лёгкие', 'Средние', 'Сложные'][f.lvl]);
+    if (f.src) parts.push(f.src);
+    else if (f.cat) parts.push(CAT[f.cat].emoji + ' ' + CAT[f.cat].name);
+    if (f.lvl === -1) parts.push('мой уровень ' + CEFR[S.lvl || 1] + '–' + CEFR[Math.min(5, (S.lvl || 1) + 1)]);
+    else if (f.lvl > 0) parts.push(CEFR[f.lvl]);
     return parts.length ? parts.join(' · ') : 'Все разделы';
   }
   var feedObserver = null;
@@ -979,16 +1284,27 @@
     var top = h('div', { class: 'feedtop' });
     var fb = h('button', { class: 'filterbtn' }, I.filter + '<span>' + esc(filterLabel()) + '</span>');
     fb.addEventListener('click', filterSheet);
+    var lb = h('button', { class: 'filterbtn listenbtn' + (feedState.listen ? ' on' : ''), 'aria-label': 'Аудио-режим' }, I.head);
+    lb.addEventListener('click', function () {
+      feedState.listen = !feedState.listen;
+      toast(feedState.listen ? '🎧 Аудио-режим: сначала слушай, потом смотри текст' : '📖 Обычный режим');
+      haptic('select'); openFeed(feedState.filter);
+    });
     var chips = h('div', { class: 'chips' });
-    var all = h('button', { class: 'chip' + (!feedState.filter.mood ? ' on' : '') }, '✨ Всё');
-    all.addEventListener('click', function () { openFeed({ cat: feedState.filter.cat, mood: null, lvl: feedState.filter.lvl }); });
+    var f0 = feedState.filter;
+    var withMood = function (mood) { return { cat: f0.cat, mood: mood, lvl: f0.lvl, src: f0.src }; };
+    var all = h('button', { class: 'chip' + (!f0.mood ? ' on' : '') }, '✨ Всё');
+    all.addEventListener('click', function () { openFeed(withMood(null)); });
     chips.appendChild(all);
+    var catIslam = f0.cat && CAT[f0.cat].g === 'islam';
     MOODS.forEach(function (m) {
-      var b = h('button', { class: 'chip' + (feedState.filter.mood === m.key ? ' on' : '') }, m.emoji + ' ' + m.name);
-      b.addEventListener('click', function () { openFeed({ cat: feedState.filter.cat, mood: feedState.filter.mood === m.key ? null : m.key, lvl: feedState.filter.lvl }); });
+      if (catIslam && m.key !== 'faith') return; // в исламских разделах только «Вера»
+      if (m.key === 'faith' && f0.cat && !catIslam) return;
+      var b = h('button', { class: 'chip' + (f0.mood === m.key ? ' on' : '') }, m.emoji + ' ' + m.name);
+      b.addEventListener('click', function () { openFeed(withMood(f0.mood === m.key ? null : m.key)); });
       chips.appendChild(b);
     });
-    top.appendChild(fb); top.appendChild(chips);
+    top.appendChild(fb); top.appendChild(lb); top.appendChild(chips);
     var feed = h('div', { class: 'feed', id: 'feed' });
     wrap.appendChild(top); wrap.appendChild(feed);
     root.appendChild(wrap);
@@ -999,8 +1315,18 @@
       entries.forEach(function (en) {
         if (en.isIntersecting && en.intersectionRatio > 0.6) {
           var slot = en.target, idx = +slot.getAttribute('data-i');
-          if (feedState.active !== slot) { tts.stop(); feedState.active = slot; }
           var it = BY_ID[slot.getAttribute('data-id')];
+          if (feedState.active !== slot) {
+            tts.stop(); feedState.active = slot;
+            // заранее скачиваем нейро-озвучку, чтобы она играла мгновенно (важно для iPhone)
+            try { if (it && window.InkVoice && window.InkVoice.prefetch) window.InkVoice.prefetch(it.en); } catch (e) {}
+            // Аудио-режим: карточка сама читается вслух, текст скрыт до нажатия
+            if (feedState.listen && it) setTimeout(function () {
+              if (feedState.active !== slot) return;
+              var fc = slot.querySelector('.fcard');
+              tts.speak(it.en, fc.querySelector('[data-act=tts]'), null, fc.querySelector('.fc-en'));
+            }, 450);
+          }
           if (it) setTimeout(function () { if (feedState.active === slot) { if (markSeen(it)) {} } }, 900);
           if (idx >= feedState.rendered - 3) appendFeed(5);
         }
@@ -1025,7 +1351,7 @@
       }
       var it = feedState.queue[feedState.rendered];
       var slot = h('div', { class: 'slot', 'data-i': feedState.rendered, 'data-id': it.id });
-      slot.appendChild(cardEl(it, { onRated: onFeedRated }));
+      slot.appendChild(cardEl(it, { onRated: onFeedRated, listen: feedState.listen }));
       feed.appendChild(slot);
       feedObserver.observe(slot);
       feedState.rendered++;
@@ -1048,26 +1374,31 @@
   if (tg && tg.onEvent) { try { tg.onEvent('viewportChanged', function () { setTimeout(sizeFeed, 50); }); } catch (e) {} }
 
   function filterSheet() {
-    var f = { cat: feedState.filter.cat, mood: feedState.filter.mood, lvl: feedState.filter.lvl };
+    var f = { cat: feedState.filter.cat, mood: feedState.filter.mood, lvl: feedState.filter.lvl, src: feedState.filter.src };
     openSheet(function (sh) {
-      sh.appendChild(h('h2', { style: 'margin-top:4px' }, 'Раздел'));
-      var cg = h('div', { class: 'chips', style: 'flex-wrap:wrap;margin:0;padding:0' });
-      var mk = function (key, label) {
-        var b = h('button', { class: 'chip' + (f.cat === key ? ' on' : '') }, label);
-        b.addEventListener('click', function () { f.cat = key; $$('.chip', cg).forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); haptic('select'); });
-        cg.appendChild(b);
-      };
-      mk(null, '✨ Все');
-      CATS.forEach(function (c) { mk(c.key, c.emoji + ' ' + c.name); });
-      sh.appendChild(cg);
-      sh.appendChild(h('h2', {}, 'Сложность'));
-      var seg = h('div', { class: 'seg' });
-      ['Любая', 'Лёгкие', 'Средние', 'Сложные'].forEach(function (lbl, i) {
-        var b = h('button', { class: f.lvl === i ? 'on' : '' }, lbl);
-        b.addEventListener('click', function () { f.lvl = i; $$('button', seg).forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); haptic('select'); });
-        seg.appendChild(b);
+      sh.appendChild(h('h2', { style: 'margin-top:4px' }, 'Уровень'));
+      var lg = h('div', { class: 'chips wrap' });
+      var lvOpts = [[0, '🌈 Любой']].concat(S.lvl ? [[-1, '🎯 Мой: ' + CEFR[S.lvl] + '–' + CEFR[Math.min(5, S.lvl + 1)]]] : []).concat([[1, 'A1'], [2, 'A2'], [3, 'B1'], [4, 'B2'], [5, 'C1']]);
+      lvOpts.forEach(function (o) {
+        var b = h('button', { class: 'chip' + (f.lvl === o[0] ? ' on' : '') }, o[1]);
+        b.addEventListener('click', function () { f.lvl = o[0]; $$('.chip', lg).forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); haptic('select'); });
+        lg.appendChild(b);
       });
-      sh.appendChild(seg);
+      sh.appendChild(lg);
+      var groups = [['Раздел', CATS.filter(function (c) { return c.g !== 'islam'; })], ['☪️ Ислам', ISLAM_CATS]];
+      var all = [];
+      groups.forEach(function (gp, gi) {
+        sh.appendChild(h('h2', {}, gp[0]));
+        var cg = h('div', { class: 'chips wrap' });
+        var mk = function (key, label) {
+          var b = h('button', { class: 'chip' + (f.cat === key && !f.src ? ' on' : '') }, label);
+          b.addEventListener('click', function () { f.cat = key; f.src = null; if (key && CAT[key].g === 'islam') f.mood = null; all.forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); haptic('select'); });
+          cg.appendChild(b); all.push(b);
+        };
+        if (gi === 0) mk(null, '✨ Все');
+        gp[1].forEach(function (c) { mk(c.key, c.emoji + ' ' + c.name); });
+        sh.appendChild(cg);
+      });
       var ok = h('button', { class: 'btn primary block mt' }, 'Показать');
       ok.addEventListener('click', function () { popLayer(); setTimeout(function () { openFeed(f); }, 240); });
       sh.appendChild(ok);
@@ -1077,29 +1408,96 @@
   // =====================================================================
   // 13. Читалка: рассказы, разделы, поиск, избранное
   // =====================================================================
+  var STORY_COLORS = { creepy: '#a855f7', dark: '#64748b', touching: '#ff6a8d', love: '#ff4f9a', funny: '#f5a524', weird: '#14b8a6', motivation: '#22c55e', wise: '#06b6d4', faith: '#10b981' };
+  function storyCard(s) {
+    var prog = S.stories[s.id] || {}, p = prog.done ? 1 : (prog.p || 0) / s.paras.length;
+    var b = h('button', { class: 'storycard', style: '--c:' + (s.g === 'islam' ? '#10b981' : STORY_COLORS[s.tags[0]] || 'var(--accent)') });
+    b.innerHTML = '<div class="st-title serif">' + esc(s.title) + '</div>' +
+      '<div class="st-meta">' + lvChip(s.l) + ' ' + esc(s.author) + (s.year ? ' · ' + esc(s.year) : '') + ' · ' + s.minutes + ' мин ' + s.tags.map(function (t) { return MOOD[t] ? MOOD[t].emoji : ''; }).join('') + (prog.done ? ' · ✅' : '') + '</div>' +
+      '<div class="st-about">' + esc(s.about) + '</div>' +
+      '<div class="bar"><i style="width:' + Math.round(p * 100) + '%"></i></div>';
+    b.addEventListener('click', function () { openStory(s.id); });
+    return b;
+  }
+  // Тайтлы аниме: [название, число цитат], любимые — наверху
+  var FRANCHISE_ALIAS = { 'The End of Evangelion': 'Neon Genesis Evangelion', 'Evangelion': 'Neon Genesis Evangelion', 'Hellsing Ultimate': 'Hellsing' };
+  function franchise(s) {
+    // «Re:Zero» не режем (двоеточие без пробела), «Code Geass: R2» → «Code Geass»
+    var f = String(s || '—').split(/: | — | - /)[0].replace(/\s+(Shippuden|Shippūden|R2|Z|GT|Super|Brotherhood|II|III|0|Season \d+|2nd Season|the Movie|Movie)$/i, '').trim();
+    return FRANCHISE_ALIAS[f] || f;
+  }
+  // Подборка внутри раздела: тайтл аниме, тема «Основ», сура, сборник хадисов
+  function groupKey(it) {
+    var f = franchise(it.s);
+    if (it.c === 'anime') return f;
+    // «Аль-Бакара 2:255 · Аят аль-Курси» → «Аль-Бакара», «Сахих аль-Бухари, 6306 · …» → «Сахих аль-Бухари»
+    return f.split(/\s*·\s*/)[0].replace(/[,\s]+\d+(\s*[:–-]\s*\d+)*\s*$/, '').trim() || f;
+  }
+  function animeTitles() {
+    var cnt = {};
+    BY_CAT.anime.forEach(function (it) { var s = franchise(it.s); cnt[s] = (cnt[s] || 0) + 1; });
+    var fav = ['Code Geass', 'Sword Art Online'];
+    return Object.keys(cnt).map(function (k) { return [k, cnt[k]]; }).sort(function (a, b) {
+      var fa = fav.some(function (f) { return a[0].indexOf(f) === 0; }), fb = fav.some(function (f) { return b[0].indexOf(f) === 0; });
+      if (fa !== fb) return fa ? -1 : 1;
+      return b[1] - a[1] || a[0].localeCompare(b[0]);
+    });
+  }
+
   RENDER.library = function (root) {
     root.innerHTML =
-      '<div class="topline"><h1 style="margin:0">Читалка</h1><button class="iconbtn" id="favbtn" aria-label="Избранное">' + I.heart + '</button></div>' +
-      '<div class="search">' + I.search + '<input id="q" type="search" placeholder="Поиск: Naruto, love, Шекспир, судьба…" autocomplete="off"></div>' +
+      '<div class="topline"><h1 style="margin:0">Библиотека</h1><button class="iconbtn" id="favbtn" aria-label="Избранное">' + I.heart + '</button></div>' +
+      '<div class="search">' + I.search + '<input id="q" type="search" placeholder="Поиск: Lelouch, love, Шекспир, терпение…" autocomplete="off"></div>' +
       '<div id="results"></div>' +
       '<div id="libmain">' +
-      '<h2 id="stories">📖 Рассказы целиком</h2><div class="list" id="storylist"></div>' +
+      '<h2>🎓 Учёба с нуля</h2><div class="modes" id="learn"></div>' +
+      '<button class="surface animebtn" data-go="anime"><b>🌸</b><span><b>Аниме по тайтлам</b>' + animeTitles().length + ' тайтлов · Code Geass, SAO, Naruto, AoT…</span><i>›</i></button>' +
+      '<h2 id="stories">📖 Рассказы целиком</h2><div class="chips" id="stfilter"></div><div class="list" id="storylist"></div>' +
+      (ISLAM_CATS.some(function (c) { return BY_CAT[c.key].length; }) ? '<h2>☪️ Ислам <button data-go="islam">Открыть</button></h2><div class="hscroll" id="islamcats"></div>' : '') +
+      '<h2>🛠 Мои инструменты</h2><div class="modes" id="tools"></div>' +
       '<h2>🗂 Разделы</h2><div class="catgrid" id="catgrid"></div>' +
       '</div>';
-    var sl = $('#storylist', root);
-    var colors = { creepy: '#a855f7', dark: '#64748b', touching: '#ff6a8d', love: '#ff4f9a', funny: '#f5a524', weird: '#14b8a6', motivation: '#22c55e' };
-    STORIES.forEach(function (s) {
-      var prog = S.stories[s.id] || {}, p = prog.done ? 1 : (prog.p || 0) / s.paras.length;
-      var b = h('button', { class: 'storycard', style: '--c:' + (colors[s.tags[0]] || 'var(--accent)') });
-      b.innerHTML = '<div class="st-title serif">' + esc(s.title) + '</div>' +
-        '<div class="st-meta">' + esc(s.author) + ' · ' + esc(s.year) + ' · ' + s.minutes + ' мин · ' + s.tags.map(function (t) { return MOOD[t] ? MOOD[t].emoji : ''; }).join('') + (prog.done ? ' · ✅ прочитано' : '') + '</div>' +
-        '<div class="st-about">' + esc(s.about) + '</div>' +
-        '<div class="bar"><i style="width:' + Math.round(p * 100) + '%"></i></div>';
-      b.addEventListener('click', function () { openStory(s.id); });
-      sl.appendChild(b);
+    var lg = $('#learn', root);
+    [['basics', '🌱', 'Основы', BY_CAT.basics.length + ' фраз на каждый день', '#84cc16'],
+      ['course', '🧱', '1000 слов', 'День ' + (courseDay() + 1) + ' из ' + COURSE_DAYS, '#f59e0b'],
+      ['grammar', '📘', 'Грамматика', Object.keys(S.gram).length + ' из ' + GRAMMAR.length + ' уроков', '#3b82f6'],
+      ['test', '🎯', 'Тест уровня', S.lvl ? 'Твой уровень: ' + CEFR[S.lvl] : '3 минуты', '#ef4444']
+    ].forEach(function (m) {
+      var b = h('button', { class: 'mode', style: '--c:' + m[4], 'data-go': m[0] });
+      b.innerHTML = '<b>' + m[1] + '</b><span>' + m[2] + '</span><small>' + esc(m[3]) + '</small>';
+      lg.appendChild(b);
     });
+    var tl = $('#tools', root);
+    [['mytext', '📥', 'Мой текст', 'Вставь любой английский текст', '#8b5cf6'],
+      ['finds', '⭐', 'Мои находки', S.finds.length + ' своих карточек', '#facc15'],
+      ['translator', '🌍', 'Переводчик', 'RU ⇄ EN', '#06b6d4'],
+      ['dict', '📒', 'Мой словарь', Object.keys(S.words).length + ' слов', '#22c55e']
+    ].forEach(function (m) {
+      var b = h('button', { class: 'mode', style: '--c:' + m[4], 'data-go': m[0] });
+      b.innerHTML = '<b>' + m[1] + '</b><span>' + m[2] + '</span><small>' + esc(m[3]) + '</small>';
+      tl.appendChild(b);
+    });
+    var ic = $('#islamcats', root);
+    if (ic) ISLAM_CATS.forEach(function (c) { if (BY_CAT[c.key].length) ic.appendChild(catTile(c)); });
+    // Рассказы с фильтром по уровню
+    var hasEasy = STORIES.some(function (s) { return s.g !== 'islam' && s.l <= 2; });
+    var sl = $('#storylist', root), sf = $('#stfilter', root), stLv = S.lvl && S.lvl <= 2 && hasEasy ? 'easy' : 'all';
+    var drawStories = function () {
+      sl.innerHTML = '';
+      STORIES.filter(function (s) { return s.g !== 'islam' && (stLv === 'all' || (stLv === 'easy' ? s.l <= 2 : s.l >= 3)); })
+        .sort(function (a, b) { return a.l - b.l; })
+        .forEach(function (s) { sl.appendChild(storyCard(s)); });
+      if (!sl.children.length) sl.innerHTML = '<div class="empty"><b>📖</b>Таких рассказов пока нет</div>';
+    };
+    [['all', '✨ Все'], ['easy', '🌱 Лёгкие A1–A2'], ['hard', '📚 Классика B1+']].forEach(function (o) {
+      var b = h('button', { class: 'chip' + (stLv === o[0] ? ' on' : '') }, o[1]);
+      b.addEventListener('click', function () { stLv = o[0]; $$('.chip', sf).forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); drawStories(); });
+      sf.appendChild(b);
+    });
+    drawStories();
     var cg = $('#catgrid', root);
-    CATS.forEach(function (c) { cg.appendChild(catTile(c)); });
+    MAIN_CATS.forEach(function (c) { cg.appendChild(catTile(c)); });
+    root.onclick = function (e) { var g = e.target.closest('[data-go]'); if (g) go(g.getAttribute('data-go')); };
     $('#favbtn', root).addEventListener('click', openFavorites);
     var q = $('#q', root), timer;
     q.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { doSearch(q.value, root); }, 180); });
@@ -1136,6 +1534,29 @@
       var play = h('button', { class: 'btn primary block' }, I.play + ' Читать лентой');
       play.addEventListener('click', function () { openFeed({ cat: key }); });
       body.appendChild(play);
+      if (key === 'anime') {
+        var at = h('button', { class: 'btn block mt' }, '🌸 Выбрать тайтл');
+        at.addEventListener('click', openAnimeTitles); body.appendChild(at);
+      }
+      if (key === 'mine') {
+        var mf = h('button', { class: 'btn block mt' }, I.plus + ' Добавить находку');
+        mf.addEventListener('click', openFinds); body.appendChild(mf);
+      }
+      // Темы внутри раздела (Основы — по темам, Коран — по сурам, хадисы — по сборникам)
+      if (key !== 'anime') {
+        var groups = []; items.forEach(function (it) { var g = groupKey(it); if (it.s && groups.indexOf(g) < 0) groups.push(g); });
+        if (groups.length >= 2 && groups.length <= 60) {
+          body.appendChild(h('h2', {}, key === 'basics' ? 'Темы' : 'Подборки'));
+          var gc = h('div', { class: 'chips wrap' });
+          groups.forEach(function (g) {
+            var n = items.filter(function (it) { return groupKey(it) === g; }).length;
+            var b = h('button', { class: 'chip' }, esc(g) + ' <span class="faint">' + n + '</span>');
+            b.addEventListener('click', function () { openFeed({ cat: key, src: g }); });
+            gc.appendChild(b);
+          });
+          body.appendChild(gc);
+        }
+      }
       body.appendChild(h('div', { class: 'spacer' }));
       var list = h('div', { class: 'list' });
       items.forEach(function (it) { list.appendChild(rowItem(it)); });
@@ -1158,9 +1579,10 @@
     var prog = S.stories[id] || (S.stories[id] = { p: 0, done: false, read: {} });
     if (!prog.read) prog.read = {};
     var mode = S.set.hide ? 'think' : 'parallel';
+    var play = { tok: null };
     pushLayer(esc(s.title), function (body, L) {
       var head = h('div', { class: 'reader-head' });
-      head.innerHTML = '<div class="t serif">' + esc(s.title) + '</div><div class="m">' + esc(s.author) + ' · ' + esc(s.year) + ' · ' + s.minutes + ' мин · ' + s.paras.length + ' абзацев</div><div class="ab">' + esc(s.about) + '</div>';
+      head.innerHTML = '<div class="t serif">' + esc(s.title) + '</div><div class="m">' + lvChip(s.l) + ' ' + esc(s.author) + (s.year ? ' · ' + esc(s.year) : '') + ' · ' + s.minutes + ' мин · ' + s.paras.length + ' абзацев</div><div class="ab">' + esc(s.about) + '</div>';
       body.appendChild(head);
       var seg = h('div', { class: 'seg' });
       [['think', '🤔 Сначала сам'], ['parallel', '📖 Параллельно']].forEach(function (m) {
@@ -1172,13 +1594,41 @@
         seg.appendChild(b);
       });
       body.appendChild(seg);
+      // Слушать рассказ целиком: абзац за абзацем, с подсветкой слов и автопрокруткой
+      var pb = h('button', { class: 'btn block mt' }, I.head + ' Слушать рассказ');
+      pb.addEventListener('click', function () {
+        if (play.tok) { stopPlay(); return; }
+        var from = 0;
+        if (prog.p > 0 && prog.p < s.paras.length) from = prog.p;
+        playFrom(from);
+      });
+      body.appendChild(pb);
+      function stopPlay() { play.tok = null; tts.stop(); pb.innerHTML = I.head + ' Слушать рассказ'; pb.classList.remove('primary'); }
+      function playFrom(i) {
+        var tok = play.tok = {};
+        pb.innerHTML = '⏸ Остановить'; pb.classList.add('primary');
+        var step = function (k) {
+          if (play.tok !== tok) return;
+          if (k >= s.paras.length) { stopPlay(); toast('🎧 Рассказ дослушан до конца'); return; }
+          var el = $('.para[data-i="' + k + '"]', wrap);
+          if (!el) return stopPlay();
+          L.scrollTo({ top: el.offsetTop - 90, behavior: 'smooth' });
+          var fired = false;
+          tts.speak(s.paras[k].en, null, null, el.querySelector('.en'), function () {
+            if (fired || play.tok !== tok) return; fired = true;
+            markPara(k, el);
+            setTimeout(function () { step(k + 1); }, 450);
+          });
+        };
+        step(i);
+      }
       var wrap = h('div', { class: 'mt' });
       s.paras.forEach(function (p, i) {
         var pit = { id: s.id + ':' + i, en: p.en, ru: p.ru, w: p.w || [], c: 'books' };
         var el = h('div', { class: 'para' + (prog.read[i] ? ' read' : ''), 'data-i': i });
         el.innerHTML = '<div class="num">' + (i + 1) + '</div><div class="en serif">' + wordsHTML(p.en, p.w) + '</div>' +
           '<div class="tools"><button data-a="tr">' + I.eye + ' Перевод</button><button data-a="say">' + I.vol + ' Слушать</button>' + ((p.w || []).length ? '<button data-a="w">' + I.words + ' Слова · ' + p.w.length + '</button>' : '') + '</div>' +
-          '<div class="ru serif' + (mode === 'think' ? ' hidden' : '') + '">' + esc(p.ru) + '</div>';
+          '<div class="ru serif' + (mode === 'think' ? ' hidden' : '') + '">' + esc(p.ru) + (p.n ? '<div class="pnote">💡 ' + esc(p.n) + '</div>' : '') + '</div>';
         el.addEventListener('click', function (e) {
           var w = e.target.closest('.w'); if (w) { wordSheet(w.textContent, pit, w); return; }
           var a = e.target.closest('[data-a]'); if (!a) return;
@@ -1186,7 +1636,7 @@
           if (act === 'tr') {
             var ru = el.querySelector('.ru'); ru.classList.toggle('hidden'); el.classList.add('shown');
             markPara(i, el);
-          } else if (act === 'say') { if (a.classList.contains('playing')) tts.stop(); else tts.speak(p.en, a); }
+          } else if (act === 'say') { if (a.classList.contains('playing')) tts.stop(); else tts.speak(p.en, a, null, el.querySelector('.en')); }
           else if (act === 'w') wordsSheet(pit);
         });
         wrap.appendChild(el);
@@ -1214,7 +1664,7 @@
         var target = $('.para[data-i="' + Math.min(prog.p, s.paras.length - 1) + '"]', wrap);
         if (target) { L.scrollTo({ top: target.offsetTop - 70 }); toast('📍 Продолжаем с абзаца ' + (prog.p + 1)); }
       }, 320);
-    }, { onClose: function () { save(); if (curTab === 'library') RENDER.library($('.tab[data-tab=library]')); } });
+    }, { onClose: function () { play.tok = null; save(); if (curTab === 'library') RENDER.library($('.tab[data-tab=library]')); } });
 
     function markPara(i, el) {
       if (prog.read[i]) return;
@@ -1237,7 +1687,10 @@
     ['who', '🗣', 'Кто это сказал?', 'Герои, злодеи, гении', '#d946ef'],
     ['anime', '🌸', 'Угадай аниме', 'Для настоящих отаку', '#ff4f9a'],
     ['aorp', '🎭', 'Аниме или философ?', 'Сложнее, чем кажется', '#14b8a6'],
-    ['tf', '🤯', 'Правда или ложь?', 'Странные факты', '#ef4444']
+    ['tf', '🤯', 'Правда или ложь?', 'Странные факты', '#ef4444'],
+    ['dict', '🎧', 'Диктант', 'Услышь и напиши', '#0ea5e9'],
+    ['back', '✍️', 'Обратный перевод', 'С русского на английский', '#84cc16'],
+    ['faith', '🤲', 'Квиз о вере', 'Слова, источники, смыслы', '#10b981']
   ];
   RENDER.practice = function (root) {
     var ds = dueSentences().length, dw = dueWords().length, total = ds + dw;
@@ -1249,6 +1702,16 @@
     rbtn.addEventListener('click', startReview);
     rb.appendChild(rbtn);
     root.appendChild(rb);
+    root.appendChild(h('h2', {}, '🎓 Учёба'));
+    var lg = h('div', { class: 'modes' });
+    [['course', '🧱', '1000 слов', 'День ' + (courseDay() + 1) + ' из ' + COURSE_DAYS, '#f59e0b'],
+      ['grammar', '📘', 'Грамматика', Object.keys(S.gram).length + ' из ' + GRAMMAR.length + ' уроков', '#3b82f6']].forEach(function (m) {
+      var b = h('button', { class: 'mode', style: '--c:' + m[4] });
+      b.innerHTML = '<b>' + m[1] + '</b><span>' + m[2] + '</span><small>' + m[3] + '</small>';
+      b.addEventListener('click', function () { go(m[0]); });
+      lg.appendChild(b);
+    });
+    root.appendChild(lg);
     root.appendChild(h('h2', {}, '🎯 Квизы <span class="faint" style="text-transform:none;letter-spacing:0">рекорд: ' + S.quiz.best + '/10</span>'));
     var mg = h('div', { class: 'modes' });
     MODES.forEach(function (m) {
@@ -1371,7 +1834,7 @@
       var sw = singleWordGloss();
       var cands = [];
       ITEMS.forEach(function (it) {
-        if (it.en.length > 230 || !it.w) return;
+        if (it.en.length > 230 || !it.w || isIslam(it)) return;
         for (var j = 0; j < it.w.length; j++) {
           var w = it.w[j][0];
           if (!/^[A-Za-z]+$/.test(w) || w.length < 4) continue;
@@ -1387,7 +1850,7 @@
         qs.push({ hint: 'Какое слово пропущено?', qhtml: html.replace(/\n/g, '<br>'), small: c.it.en.length > 90, ans: c.word, opts: distinctOpts(c.word, sw, 4), explain: '<b>' + esc(c.word) + '</b> — ' + esc(c.ru) + '<br><span class="muted">' + esc(c.it.ru) + '</span>', item: c.it });
       });
     } else if (mode === 'listen') {
-      pool = ITEMS.filter(function (it) { return it.en.length < 90 && it.en.indexOf('\n') < 0 && ['twisters', 'idioms'].indexOf(it.c) < 0; });
+      pool = ITEMS.filter(function (it) { return it.en.length < 90 && it.en.indexOf('\n') < 0 && !isIslam(it) && ['twisters', 'idioms'].indexOf(it.c) < 0 && it.l <= Math.max(2, (S.lvl || 3) + 1); });
       var ruP = pool.map(function (it) { return it.ru; });
       shuffle(pool).slice(0, 10).forEach(function (it) {
         qs.push({ hint: 'Послушай и выбери перевод', listen: it.en, ans: it.ru, opts: distinctOpts(it.ru, ruP, 4), explain: '<span class="serif">' + esc(it.en) + '</span>', item: it });
@@ -1413,6 +1876,22 @@
         var a = it.c === 'anime' ? '🌸 Аниме' : '🏛 Великий ум';
         qs.push({ hint: 'Аниме или великий ум?', q: it.en, small: it.en.length > 80, serif: true, ans: a, opts: ['🌸 Аниме', '🏛 Великий ум'], two: true, explain: '— <b>' + esc(it.a || '') + '</b>' + (it.s ? ', ' + esc(it.s) : '') + '<br><span class="muted">' + esc(it.ru) + '</span>', item: it });
       });
+    } else if (mode === 'faith') {
+      // Квиз о вере: значения слов и имён, источник (Коран или хадис), смысл аята/хадиса/дуа
+      var iw = (BY_CAT.iwords || []).concat(BY_CAT.names || []).filter(function (it) { return it.tr; });
+      var texts = (BY_CAT.quran || []).concat(BY_CAT.hadith || [], BY_CAT.dua || []).filter(function (it) { return it.en.length < 260; });
+      var ruW = iw.map(function (it) { return it.ru; }), ruT = texts.map(function (it) { return it.ru; });
+      shuffle(iw).slice(0, 4).forEach(function (it) {
+        qs.push({ hint: it.c === 'names' ? 'Что означает это имя Аллаха?' : 'Что означает это слово?', q: it.tr, ar: it.ar, ans: it.ru, opts: distinctOpts(it.ru, ruW, 4), explain: '<span class="serif">' + esc(it.en) + '</span>', item: it });
+      });
+      shuffle(texts.filter(function (it) { return it.c !== 'dua'; })).slice(0, 3).forEach(function (it) {
+        var a = it.c === 'quran' ? '📖 Коран' : '📿 Хадис';
+        qs.push({ hint: 'Откуда эти слова?', q: it.en, small: true, serif: true, ans: a, opts: ['📖 Коран', '📿 Хадис'], two: true, explain: '<b>' + esc(refLabel(it.ref)) + '</b><br><span class="muted">' + esc(it.ru) + '</span>', item: it });
+      });
+      shuffle(texts).slice(0, 3).forEach(function (it) {
+        qs.push({ hint: 'Выбери правильный перевод', q: it.en, small: true, serif: true, ans: it.ru, opts: distinctOpts(it.ru, ruT, 3), explain: esc(refLabel(it.ref)), item: it });
+      });
+      qs = shuffle(qs);
     } else if (mode === 'tf') {
       // Правда или ложь: настоящий факт или факт с подменённым числом/словом
       var facts = shuffle(BY_CAT.facts).slice(0, 10);
@@ -1431,6 +1910,7 @@
   }
 
   function startQuiz(mode) {
+    if (mode === 'dict' || mode === 'back') return startTyping(mode);
     var qs = buildQuestions(mode);
     if (!qs.length) { toast('Недостаточно материала для этого квиза'); return; }
     var meta = MODES.filter(function (m) { return m[0] === mode; })[0];
@@ -1443,6 +1923,7 @@
         body.innerHTML = '<div class="qtop"><span>Вопрос ' + (i + 1) + ' из ' + qs.length + '</span><span>✅ ' + score + '</span></div><div class="qprog"><i style="width:' + (i / qs.length * 100) + '%"></i></div>';
         var card = h('div', { class: 'surface qcard' });
         card.innerHTML = '<div class="hint">' + q.hint + '</div>' +
+          (q.ar ? '<div class="q-ar" dir="rtl" lang="ar">' + esc(q.ar) + '</div>' : '') +
           (q.listen ? '<button class="btn primary" id="play">' + I.vol + ' Слушать ещё раз</button>' :
             '<div class="q' + (q.small ? ' small' : '') + (q.serif || q.qhtml ? ' serif' : '') + '">' + (q.qhtml || esc(q.q)) + '</div>') +
           (q.say ? '<div class="extra"><button class="btn sm ghost" id="say">' + I.vol + ' Произношение</button></div>' : '');
@@ -1495,6 +1976,690 @@
       }
       show();
     }, { onClose: function () { if (curTab === 'practice') RENDER.practice($('.tab[data-tab=practice]')); } });
+  }
+
+  // =====================================================================
+  // 14b. Универсальный квиз с вариантами ответа
+  // =====================================================================
+  // q: { hint, q | qhtml, ans, opts, explain, say, serif, small }; o.onDone(score, total, body)
+  function runQuiz(title, qs, o) {
+    o = o || {};
+    var i = 0, score = 0;
+    pushLayer(title, function (body) {
+      function show() {
+        if (i >= qs.length) return o.onDone(score, qs.length, body);
+        var q = qs[i];
+        body.innerHTML = '<div class="qtop"><span>Вопрос ' + (i + 1) + ' из ' + qs.length + '</span><span>✅ ' + score + '</span></div><div class="qprog"><i style="width:' + (i / qs.length * 100) + '%"></i></div>';
+        var card = h('div', { class: 'surface qcard' });
+        card.innerHTML = '<div class="hint">' + q.hint + '</div>' +
+          (q.ar ? '<div class="q-ar" dir="rtl" lang="ar">' + esc(q.ar) + '</div>' : '') +
+          '<div class="q' + (q.small ? ' small' : '') + (q.serif ? ' serif' : '') + '">' + (q.qhtml || esc(q.q)) + '</div>' +
+          (q.say ? '<div class="extra"><button class="btn sm ghost" id="say">' + I.vol + ' Произношение</button></div>' : '');
+        body.appendChild(card);
+        if (q.say) { var sb = $('#say', card); sb.addEventListener('click', function () { tts.speak(q.say, sb, 0.85); }); setTimeout(function () { tts.speak(q.say, null, 0.85); }, 250); }
+        var opts = h('div', { class: 'opts' + (q.two ? ' two' : '') });
+        q.opts.forEach(function (op) {
+          var b = h('button', { class: 'opt' }, esc(op));
+          b.addEventListener('click', function () { answer(op, b, opts); });
+          opts.appendChild(b);
+        });
+        body.appendChild(opts);
+      }
+      var locked = false;
+      function answer(op, b, opts) {
+        if (locked) return; locked = true;
+        var q = qs[i], ok = op === q.ans;
+        $$('.opt', opts).forEach(function (x) { if (x.textContent === q.ans) x.classList.add('good'); else if (x !== b) x.classList.add('dim'); });
+        if (ok) { score++; addXP(2, b); haptic('success'); } else { b.classList.add('bad'); haptic('error'); }
+        activity(1);
+        if (q.item) markSeen(q.item);
+        if (o.onAnswer) o.onAnswer(q, ok);
+        if (!ok || q.explain) {
+          if (q.explain) body.appendChild(h('div', { class: 'explain' }, q.explain));
+          var nb = h('button', { class: 'btn primary block mt' }, i + 1 < qs.length ? 'Дальше →' : 'Результат');
+          nb.addEventListener('click', function () { i++; locked = false; show(); });
+          body.appendChild(nb);
+          nb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else setTimeout(function () { i++; locked = false; show(); }, 650);
+      }
+      show();
+    }, o.layer);
+  }
+  function resultHTML(score, total, msg) {
+    return '<div class="result"><div class="score">' + score + '/' + total + '</div><div class="msg">' + msg + '</div></div>';
+  }
+  function scoreMsg(score, total) {
+    var p = score / total;
+    return p >= 0.9 ? 'Великолепно! 🌟' : p >= 0.7 ? 'Очень хорошо! 💪' : p >= 0.5 ? 'Неплохо! Дальше — лучше 📖' : 'Не сдавайся — повторение творит чудеса 🦉';
+  }
+
+  // =====================================================================
+  // 14c. Аниме по тайтлам
+  // =====================================================================
+  var TITLE_COLORS = ['#ff4f9a', '#8b5cf6', '#06b6d4', '#f59e0b', '#22c55e', '#ef4444', '#3b82f6', '#d946ef', '#14b8a6', '#f97316'];
+  function openAnimeTitles() {
+    pushLayer('🌸 Аниме по тайтлам', function (body) {
+      var titles = animeTitles();
+      body.innerHTML = '<div class="sub" style="margin-bottom:14px">Выбери тайтл и читай цитаты только из него. Так одни и те же слова встречаются снова и снова — это называется «узкое чтение», и оно отлично работает.</div>';
+      var all = h('button', { class: 'btn primary block' }, I.play + ' Все аниме лентой · ' + BY_CAT.anime.length);
+      all.addEventListener('click', function () { openFeed({ cat: 'anime' }); });
+      body.appendChild(all);
+      body.appendChild(h('div', { class: 'spacer' }));
+      var grid = h('div', { class: 'titles' });
+      titles.forEach(function (t, k) {
+        var items = BY_CAT.anime.filter(function (it) { return franchise(it.s) === t[0]; });
+        var seen = items.filter(function (it) { return S.seen[it.id]; }).length;
+        var minL = Math.min.apply(null, items.map(function (it) { return it.l; }));
+        var hue = TITLE_COLORS[(t[0].length * 7 + t[0].charCodeAt(0)) % TITLE_COLORS.length];
+        var b = h('button', { class: 'titlecard', style: '--c:' + hue });
+        b.innerHTML = '<b>' + esc(t[0]) + '</b><small>' + t[1] + ' ' + plural(t[1], 'цитата', 'цитаты', 'цитат') + ' · от ' + CEFR[minL] + (seen ? ' · ✓ ' + seen : '') + '</small><div class="mbar"><i style="width:' + Math.round(seen / t[1] * 100) + '%"></i></div>';
+        b.addEventListener('click', function () { openFeed({ cat: 'anime', src: t[0] }); });
+        grid.appendChild(b);
+      });
+      body.appendChild(grid);
+    });
+  }
+
+  // =====================================================================
+  // 14d. Ислам
+  // =====================================================================
+  function openIslam() {
+    markPlan('faith');
+    pushLayer('☪️ Ислам', function (body) {
+      body.innerHTML = '<div class="surface bism"><div class="a" dir="rtl" lang="ar">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</div><div class="e serif">In the name of Allah, the Most Gracious, the Most Merciful.</div><div class="r">Во имя Аллаха, Милостивого, Милосердного.</div></div>' +
+        '<div class="sub" style="margin:12px 2px 0">Учим английский на словах Корана и Сунны. Переводы смыслов простые — для начинающих. У каждой карточки есть источник: quran.com и sunnah.com.</div>';
+      var daily = [['quran', '📖 Аят дня'], ['hadith', '📿 Хадис дня'], ['dua', '🤲 Дуа дня']];
+      daily.forEach(function (d) {
+        var it = islamDaily(d[0]); if (!it) return;
+        body.appendChild(h('h2', {}, d[1]));
+        body.appendChild(cardEl(it, { sheet: true }));
+      });
+      body.appendChild(h('h2', {}, '📚 Разделы'));
+      var grid = h('div', { class: 'catgrid' });
+      ISLAM_CATS.forEach(function (c) { if (BY_CAT[c.key].length) grid.appendChild(catTile(c)); });
+      body.appendChild(grid);
+      var prophets = STORIES.filter(function (s) { return s.g === 'islam'; });
+      if (prophets.length) {
+        body.appendChild(h('h2', {}, '🕋 Истории пророков'));
+        var pl = h('div', { class: 'list' });
+        prophets.forEach(function (s) { pl.appendChild(storyCard(s)); });
+        body.appendChild(pl);
+      }
+      body.appendChild(h('h2', {}, '🎯 Проверь себя'));
+      var qb = h('button', { class: 'mode', style: '--c:#10b981;width:100%' }, '<b>🤲</b><span>Квиз о вере</span><small>Значения слов, источники, переводы аятов и хадисов</small>');
+      qb.addEventListener('click', function () { startQuiz('faith'); });
+      body.appendChild(qb);
+      var feedBtn = h('button', { class: 'btn block mt' }, I.play + ' Все исламские карточки лентой');
+      feedBtn.addEventListener('click', function () { openFeed({ mood: 'faith' }); });
+      body.appendChild(feedBtn);
+      body.appendChild(switchRowBox('Показывать в общей ленте', 'Аяты и хадисы будут иногда появляться среди обычных карточек (но никогда — в «смешном» и «жутком»)', 'islamFeed'));
+    });
+  }
+  function switchRowBox(label, sub, key) {
+    var box = h('div', { class: 'surface mt', style: 'overflow:hidden' });
+    box.appendChild(switchRow(label, sub, key));
+    return box;
+  }
+
+  // =====================================================================
+  // 14e. Курс «1000 главных слов»
+  // =====================================================================
+  function courseWords(d) {
+    // «i» в словаре курса — это местоимение I, пишем с большой буквы
+    return COURSE.slice(d * DAY_SIZE, d * DAY_SIZE + DAY_SIZE).map(function (c) { return c[0] === 'i' ? ['I'].concat(c.slice(1)) : c; });
+  }
+  function openCourse() {
+    pushLayer('🧱 1000 главных слов', function (body) {
+      var cur = courseDay(), nDone = Object.keys(S.course.done).length;
+      body.innerHTML = '<div class="surface coursehead"><div class="big">День ' + (cur + 1) + ' <small>из ' + COURSE_DAYS + '</small></div>' +
+        '<div class="bar"><i style="width:' + (nDone / COURSE_DAYS * 100) + '%"></i></div>' +
+        '<div class="sub mt">Выучено слов: <b>' + Math.min(COURSE.length, nDone * DAY_SIZE) + '</b> из ' + COURSE.length + '</div></div>' +
+        '<div class="note">💡 Самая частая тысяча слов покрывает примерно три четверти любого обычного текста. По 10 слов в день — и через 100 дней ты понимаешь большую часть простого английского.</div>';
+      var start = h('button', { class: 'btn primary block mt' }, I.play + (S.course.done[cur] ? ' Повторить день ' : ' Начать день ') + (cur + 1));
+      start.addEventListener('click', function () { courseDayFlow(cur); });
+      body.appendChild(start);
+      body.appendChild(h('h2', {}, '📋 Слова дня ' + (cur + 1)));
+      var list = h('div', { class: 'wlist' });
+      courseWords(cur).forEach(function (c) { list.appendChild(courseRow(c)); });
+      body.appendChild(list);
+      body.appendChild(h('h2', {}, '🗓 Все дни'));
+      var grid = h('div', { class: 'daygrid' });
+      for (var d = 0; d < COURSE_DAYS; d++) (function (d) {
+        var st = S.course.done[d] ? 'done' : d === cur ? 'cur' : d > cur ? 'lock' : '';
+        var b = h('button', { class: 'day ' + st }, S.course.done[d] ? '✓' : String(d + 1));
+        b.addEventListener('click', function () {
+          if (d > cur) { toast('🔒 Сначала пройди день ' + (cur + 1)); return; }
+          courseDayFlow(d);
+        });
+        grid.appendChild(b);
+      })(d);
+      body.appendChild(grid);
+    }, { onClose: refreshCurrent, live: true });
+  }
+  function courseRow(c) {
+    var row = h('div', { class: 'wrow' });
+    row.innerHTML = '<div class="tx"><div class="en">' + esc(c[0]) + (c[2] ? ' <span class="ipa-s">/' + esc(c[2]) + '/</span>' : '') + '</div><div class="ru">' + esc(c[1]) + '</div></div>';
+    var say = h('button', { class: 'iconbtn' }, I.vol);
+    say.addEventListener('click', function () { tts.speak(c[0], say, 0.85); });
+    row.appendChild(say);
+    return row;
+  }
+  function courseDayFlow(d) {
+    var words = courseWords(d), i = 0;
+    pushLayer('🧱 День ' + (d + 1), function (body) {
+      function learn() {
+        if (i >= words.length) return quiz();
+        var c = words[i], ex = c[3] && BY_ID[c[3]];
+        body.innerHTML = '<div class="qtop"><span>Слово ' + (i + 1) + ' из ' + words.length + '</span><span>Знакомство</span></div><div class="qprog"><i style="width:' + (i / words.length * 100) + '%"></i></div>';
+        var card = h('div', { class: 'surface flash learncard' });
+        card.innerHTML = '<div class="big serif">' + esc(c[0]) + '</div>' + (c[2] ? '<div class="ipa">/' + esc(c[2]) + '/</div>' : '') +
+          '<div class="tr">' + esc(c[1]) + '</div>' +
+          (ex ? '<div class="exbox"><div class="k">Пример' + (ex.a || ex.s ? ' · ' + esc(ex.a || ex.s) : '') + '</div><div class="en serif">' + wordsHTML(ex.en, ex.w) + '</div><div class="veil"><div class="ru">' + esc(ex.ru) + '</div><div class="cover">Нажми, чтобы увидеть перевод</div></div></div>' : '');
+        body.appendChild(card);
+        var row = h('div', { class: 'tools-row' });
+        var say = h('button', { class: 'btn sm' }, I.vol + ' Слово');
+        say.addEventListener('click', function () { tts.speak(c[0], say, 0.8); });
+        row.appendChild(say);
+        if (ex) {
+          var sayEx = h('button', { class: 'btn sm' }, I.vol + ' Пример');
+          sayEx.addEventListener('click', function () { tts.speak(ex.en, sayEx, null, card.querySelector('.exbox .en')); });
+          row.appendChild(sayEx);
+        }
+        body.appendChild(row);
+        card.addEventListener('click', function (e) {
+          var w = e.target.closest('.w'); if (w && ex) { wordSheet(w.textContent, ex, w); return; }
+          var v = e.target.closest('.veil'); if (v) v.classList.add('open');
+        });
+        var nb = h('button', { class: 'btn primary block mt' }, i + 1 < words.length ? 'Дальше →' : '🎯 Проверить себя');
+        nb.addEventListener('click', function () { i++; learn(); });
+        body.appendChild(nb);
+        setTimeout(function () { tts.speak(c[0], say, 0.8); }, 250);
+      }
+      function quiz() {
+        popLayer();
+        var ruPool = COURSE.map(function (c) { return c[1]; });
+        var qs = shuffle(words).map(function (c) {
+          return { hint: 'Что значит это слово?', q: c[0], say: c[0], ans: c[1], opts: distinctOpts(c[1], ruPool, 4), word: c };
+        });
+        var res = {};
+        setTimeout(function () {
+          runQuiz('🧱 Проверка: день ' + (d + 1), qs, {
+            onAnswer: function (q, ok) { res[q.word[0]] = ok; },
+            onDone: function (score, total, qb) {
+              // Слова уходят в интервальные повторения
+              words.forEach(function (c) {
+                var k = c[0].toLowerCase();
+                var ok = res[c[0]];
+                if (!S.words[k]) S.words[k] = { en: c[0], ru: c[1], b: ok ? 1 : 0, d: today() + (ok ? 1 : 0), n: 1, ctx: 'course', at: Date.now() };
+              });
+              var first = !S.course.done[d];
+              S.course.done[d] = Date.now();
+              markPlan('words');
+              activity(5);
+              if (first) S.xp += 20;
+              qb.innerHTML = resultHTML(score, total, scoreMsg(score, total)) + '<div class="sub center">' + (first ? '+20 XP за день · ' : '') + 'слова добавлены в повторения 🔁</div>';
+              var nx = h('button', { class: 'btn primary block mt' }, 'Готово');
+              nx.addEventListener('click', function () { popLayer(); });
+              qb.appendChild(nx);
+              confetti(); haptic('success'); checkAch(); save(); refreshBadges();
+            }
+          }, { onClose: refreshCurrent });
+        }, 250);
+      }
+      learn();
+    });
+  }
+  function refreshCurrent() { if (curTab && curTab !== 'feed' && RENDER[curTab]) RENDER[curTab]($('.tab[data-tab=' + curTab + ']')); refreshBadges(); }
+
+  // =====================================================================
+  // 14f. Грамматика
+  // =====================================================================
+  function md(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+  function openGrammar() {
+    pushLayer('📘 Грамматика', function (body) {
+      var nDone = Object.keys(S.gram).length;
+      body.innerHTML = '<div class="sub" style="margin-bottom:12px">Короткие уроки: правило по-русски — примеры из аниме, кино и игр — упражнение. Пройдено ' + nDone + ' из ' + GRAMMAR.length + '.</div>';
+      [1, 2, 3].forEach(function (lv) {
+        var ls = GRAMMAR.filter(function (l) { return l.lv === lv; });
+        if (!ls.length) return;
+        body.appendChild(h('h2', {}, lvChip(lv) + ' ' + CEFR_NAME[lv]));
+        var list = h('div', { class: 'list' });
+        ls.forEach(function (l) {
+          var g = S.gram[l.id];
+          var b = h('button', { class: 'row-item lesson' + (g ? ' done' : '') });
+          b.innerHTML = '<div class="em">' + l.icon + '</div><div class="tx"><div class="t">' + esc(l.title) + '</div><div class="a">' + esc(l.short) + '</div></div><div class="marks">' + (g ? '✅ ' + g.s + '/' + g.n : '') + '</div>';
+          b.addEventListener('click', function () { openLesson(l.id); });
+          list.appendChild(b);
+        });
+        body.appendChild(list);
+      });
+    }, { onClose: refreshCurrent, live: true });
+  }
+  function openLesson(id) {
+    var les = GRAMMAR.filter(function (l) { return l.id === id; })[0];
+    if (!les) return;
+    pushLayer(les.icon + ' ' + esc(les.title), function (body) {
+      body.innerHTML = '<div class="lesson-head">' + lvChip(les.lv) + '<h1>' + esc(les.title) + '</h1><div class="sub">' + esc(les.short) + '</div></div>';
+      les.parts.forEach(function (p) {
+        if (p[0] === 't') body.appendChild(h('p', { class: 'ltext' }, md(p[1])));
+        else if (p[0] === 'tip') body.appendChild(h('div', { class: 'ltip' }, '💡 ' + md(p[1])));
+        else if (p[0] === 'tb') {
+          var rows = p[1];
+          var html = '<table><thead><tr>' + rows[0].map(function (c) { return '<th>' + md(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+            rows.slice(1).map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + md(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+          body.appendChild(h('div', { class: 'ltable' }, html));
+        }
+      });
+      if (les.ex.length) {
+        body.appendChild(h('h2', {}, '🎬 Примеры из жизни'));
+        les.ex.forEach(function (ex) {
+          var pit = { id: 'g:' + les.id, en: ex[0], ru: ex[1], w: [], c: 'books' };
+          var el = h('div', { class: 'surface lex' });
+          el.innerHTML = '<div class="en serif">' + wordsHTML(ex[0]) + '</div>' + (ex[2] ? '<div class="src">— ' + esc(ex[2]) + '</div>' : '') +
+            '<div class="veil"><div class="ru">' + esc(ex[1]) + '</div><div class="cover">Переведи в голове — и нажми</div></div>';
+          var say = h('button', { class: 'iconbtn' }, I.vol);
+          say.addEventListener('click', function (e) { e.stopPropagation(); tts.speak(ex[0], say, null, el.querySelector('.en')); });
+          el.appendChild(say);
+          el.addEventListener('click', function (e) {
+            var w = e.target.closest('.w'); if (w) { wordSheet(w.textContent, pit, w); return; }
+            var v = e.target.closest('.veil'); if (v) v.classList.add('open');
+          });
+          body.appendChild(el);
+        });
+      }
+      var qb = h('button', { class: 'btn primary block mt' }, '✍️ Упражнение · ' + les.q.length + ' ' + plural(les.q.length, 'вопрос', 'вопроса', 'вопросов'));
+      qb.addEventListener('click', function () { lessonQuiz(les); });
+      body.appendChild(qb);
+    });
+  }
+  function lessonQuiz(les) {
+    var qs = shuffle(les.q).map(function (q) {
+      return { hint: 'Выбери правильный вариант', qhtml: esc(q[0]).replace(/___/g, '<span class="gap">?</span>'), serif: true, small: q[0].length > 50, ans: q[1], opts: shuffle(q.slice(1)) };
+    });
+    runQuiz('✍️ ' + esc(les.title), qs, {
+      onDone: function (score, total, body) {
+        var prev = S.gram[les.id];
+        if (!prev || score > prev.s) S.gram[les.id] = { s: score, n: total, t: Date.now() };
+        if (!prev) { S.xp += 15; S.st.gram++; }
+        markPlan('gram');
+        body.innerHTML = resultHTML(score, total, scoreMsg(score, total)) + (!prev ? '<div class="sub center">+15 XP за новый урок</div>' : '');
+        var nx = nextLesson();
+        if (nx && nx.id !== les.id && !S.gram[nx.id]) {
+          var b = h('button', { class: 'btn primary block mt' }, 'Следующий урок: ' + esc(nx.title));
+          b.addEventListener('click', function () { popLayer(); popLayer(); setTimeout(function () { openLesson(nx.id); }, 250); });
+          body.appendChild(b);
+        }
+        var again = h('button', { class: 'btn block mt' }, 'Ещё раз');
+        again.addEventListener('click', function () { popLayer(); setTimeout(function () { lessonQuiz(les); }, 240); });
+        body.appendChild(again);
+        if (score >= total * 0.8) confetti();
+        haptic('success'); checkAch(); save();
+      }
+    });
+  }
+
+  // =====================================================================
+  // 14g. Тест уровня
+  // =====================================================================
+  var LEVEL_TEXT = ['',
+    'Ты в самом начале пути — это лучшее место для старта! Лента покажет короткие и простые фразы, озвучка будет медленнее. Начни с «Основ» и курса «1000 слов».',
+    'Ты знаешь базу. Лента подберёт фразы попроще и чуть сложнее. Продолжай курс слов и уроки грамматики A2.',
+    'Средний уровень — ты уже многое понимаешь. Читай рассказы целиком и цитаты из аниме без подсказок.',
+    'Выше среднего! Бери классику, стихи и сложные цитаты — и смотри аниме с английскими субтитрами.',
+    'Продвинутый уровень. Тебе доступно всё: поэзия, Шекспир, философы. Ищи в тексте редкие слова и добавляй их в словарь.'];
+  function setLevel(l) {
+    S.lvl = l;
+    if (l <= 1 && S.set.rate >= 0.9) S.set.rate = 0.8;
+    feedState.filter = myFeed(); feedState.built = false;
+    checkAch(); save();
+  }
+  function startLevelTest() {
+    pushLayer('🎯 Тест уровня', function (body) {
+      body.innerHTML = '<div class="onb" style="min-height:auto;padding:20px 4px"><div class="big">🎯</div><h1>Какой у тебя уровень?</h1><p>' + LTEST.length + ' вопросов от простого к сложному, около 3 минут. Если вопросы станут слишком трудными, тест закончится сам. Не угадывай — если не знаешь, выбирай честно.</p></div>';
+      var go1 = h('button', { class: 'btn primary block' }, 'Начать тест');
+      go1.addEventListener('click', function () { popLayer(); setTimeout(runLevelTest, 240); });
+      var beg = h('button', { class: 'btn block mt' }, '🌱 Я совсем новичок — сразу A1');
+      beg.addEventListener('click', function () { setLevel(1); popLayer(); setTimeout(function () { levelResult(1); }, 240); });
+      body.appendChild(go1); body.appendChild(beg);
+      if (S.lvl) body.appendChild(h('div', { class: 'center faint mt' }, 'Сейчас у тебя: ' + CEFR[S.lvl]));
+    });
+  }
+  function runLevelTest() {
+    var byLv = {}; LTEST.forEach(function (q) { (byLv[q[0]] = byLv[q[0]] || []).push(q); });
+    var order = []; [1, 2, 3, 4, 5].forEach(function (l) { (byLv[l] || []).forEach(function (q) { order.push(q); }); });
+    var i = 0, right = {}, asked = {}, result = 0;
+    pushLayer('🎯 Тест уровня', function (body) {
+      function show() {
+        if (i >= order.length) return finish(5);
+        var q = order[i], lv = q[0];
+        body.innerHTML = '<div class="qtop"><span>Вопрос ' + (i + 1) + ' из ' + order.length + '</span><span>' + lvChip(lv) + '</span></div><div class="qprog"><i style="width:' + (i / order.length * 100) + '%"></i></div>';
+        var card = h('div', { class: 'surface qcard' });
+        card.innerHTML = '<div class="hint">Выбери ответ</div><div class="q serif' + (q[1].length > 40 ? ' small' : '') + '">' + esc(q[1]).replace(/___/g, '<span class="gap">?</span>') + '</div>';
+        body.appendChild(card);
+        var opts = h('div', { class: 'opts' });
+        shuffle(q.slice(2)).concat(['🤷 Не знаю']).forEach(function (op) {
+          var b = h('button', { class: 'opt' }, esc(op));
+          b.addEventListener('click', function () {
+            asked[lv] = (asked[lv] || 0) + 1;
+            if (op === q[2]) right[lv] = (right[lv] || 0) + 1;
+            haptic('select');
+            i++;
+            // уровень закончился — проверяем, прошёл ли его
+            if (i >= order.length || order[i][0] !== lv) {
+              var n = byLv[lv].length;
+              if ((right[lv] || 0) < Math.ceil(n * 0.6)) return finish(Math.max(1, lv - 1));
+            }
+            show();
+          });
+          opts.appendChild(b);
+        });
+        body.appendChild(opts);
+      }
+      function finish(l) { result = l; setLevel(l); popLayer(); setTimeout(function () { levelResult(l); }, 240); }
+      show();
+    });
+  }
+  function levelResult(l) {
+    pushLayer('🎯 Твой уровень', function (body) {
+      body.innerHTML = '<div class="result"><div class="cefr-big" style="--lc:' + CEFR_COLOR[l] + '">' + CEFR[l] + '</div><div class="msg">' + CEFR_NAME[l] + '</div><div class="sub" style="max-width:420px;margin:8px auto 0;line-height:1.55">' + LEVEL_TEXT[l] + '</div></div>';
+      if (l <= 2) {
+        var c = h('button', { class: 'btn primary block' }, '🧱 Начать курс «1000 слов»');
+        c.addEventListener('click', function () { popLayer(); setTimeout(openCourse, 240); });
+        body.appendChild(c);
+        var b = h('button', { class: 'btn block mt' }, '🌱 Открыть «Основы»');
+        b.addEventListener('click', function () { popLayer(); setTimeout(function () { openCategory('basics'); }, 240); });
+        body.appendChild(b);
+      }
+      var f = h('button', { class: 'btn' + (l > 2 ? ' primary' : '') + ' block mt' }, '▶️ Лента моего уровня');
+      f.addEventListener('click', function () { openFeed(myFeed()); });
+      body.appendChild(f);
+      confetti(); haptic('success');
+    }, { onClose: refreshCurrent });
+  }
+
+  // =====================================================================
+  // 14h. Мои находки и мой текст
+  // =====================================================================
+  function roughLevel(en) {
+    var n = (en.match(/[A-Za-z']+/g) || []).length;
+    return n <= 6 ? 1 : n <= 12 ? 2 : n <= 22 ? 3 : 4;
+  }
+  function syncFinds() {
+    for (var i = ITEMS.length - 1; i >= 0; i--) if (ITEMS[i].c === 'mine') { delete BY_ID[ITEMS[i].id]; ITEMS.splice(i, 1); }
+    BY_CAT.mine = [];
+    (S.finds || []).forEach(function (f) {
+      var it = { id: f.id, c: 'mine', en: f.en, ru: f.ru, t: [], l: roughLevel(f.en), a: 'Моя находка' };
+      if (f.src) it.s = f.src;
+      ITEMS.push(it); BY_ID[it.id] = it; BY_CAT.mine.push(it);
+    });
+  }
+  function addFind(en, ru, src) {
+    en = String(en || '').trim(); ru = String(ru || '').trim();
+    if (!en || !ru) return false;
+    if (S.finds.some(function (f) { return f.en.toLowerCase() === en.toLowerCase(); })) { toast('Такая находка уже есть'); return false; }
+    S.finds.unshift({ id: 'f' + Date.now().toString(36), en: en.slice(0, 600), ru: ru.slice(0, 600), src: String(src || '').trim().slice(0, 60), at: Date.now() });
+    syncFinds();
+    S.xp += 3; activity(1); checkAch(); save();
+    toast('⭐ Находка сохранена — она появится в ленте и повторениях'); haptic('success');
+    return true;
+  }
+  function openFinds() {
+    pushLayer('⭐ Мои находки', function (body) {
+      body.innerHTML = '<div class="sub" style="margin-bottom:12px">Услышал крутую фразу в аниме, игре или книге? Запиши её — я переведу, и она станет твоей карточкой: с лентой, повторениями и озвучкой.</div>';
+      var box = h('div', { class: 'surface trbox' });
+      var ta = h('textarea', { placeholder: 'Английская фраза, например: People die when they are killed.', maxlength: '600' });
+      var src = h('input', { class: 'srcinput', placeholder: 'Откуда? (аниме, игра, книга — необязательно)', maxlength: '60' });
+      var bar = h('div', { class: 'trbar' });
+      var tb = h('button', { class: 'btn primary sm' }, 'Перевести');
+      bar.appendChild(h('div', { class: 'dir' }, 'EN → RU')); bar.appendChild(tb);
+      box.appendChild(ta); box.appendChild(src); box.appendChild(bar);
+      body.appendChild(box);
+      var out = h('div', {}); body.appendChild(out);
+      tb.addEventListener('click', function () {
+        var en = ta.value.trim(); if (!en) { ta.focus(); return; }
+        if (isRu(en)) { toast('Сюда — английскую фразу 🙂'); return; }
+        tb.disabled = true; tb.textContent = '…';
+        translateText(en).catch(function () { return ''; }).then(function (ru) {
+          tb.disabled = false; tb.textContent = 'Перевести';
+          out.innerHTML = '';
+          var card = h('div', { class: 'surface trbox mt' });
+          var rta = h('textarea', { placeholder: 'Перевод (можно поправить)', maxlength: '600' });
+          rta.value = ru || '';
+          card.appendChild(h('div', { class: 'sub', style: 'padding:12px 14px 0' }, ru ? 'Проверь перевод — можно исправить:' : 'Не получилось перевести автоматически — напиши перевод сам:'));
+          card.appendChild(rta);
+          var sb = h('button', { class: 'btn primary block' }, I.star + ' Сохранить карточку');
+          sb.addEventListener('click', function () {
+            if (addFind(en, rta.value, src.value)) { popLayer(); setTimeout(openFinds, 240); }
+          });
+          out.appendChild(card); out.appendChild(h('div', { class: 'spacer' })); out.appendChild(sb);
+        });
+      });
+      if (S.finds.length) {
+        body.appendChild(h('h2', {}, '⭐ Мои карточки · ' + S.finds.length));
+        var play = h('button', { class: 'btn block' }, I.play + ' Читать лентой');
+        play.addEventListener('click', function () { openFeed({ cat: 'mine' }); });
+        body.appendChild(play); body.appendChild(h('div', { class: 'spacer' }));
+        var list = h('div', { class: 'list' });
+        S.finds.forEach(function (f) {
+          var it = BY_ID[f.id]; if (!it) return;
+          var row = rowItem(it);
+          var del = h('button', { class: 'iconbtn del' }, I.trash);
+          del.addEventListener('click', function (e) {
+            e.stopPropagation();
+            S.finds = S.finds.filter(function (x) { return x.id !== f.id; });
+            delete S.rate[f.id]; delete S.fav[f.id];
+            syncFinds(); save(); row.remove(); toast('Удалено');
+          });
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+        body.appendChild(list);
+      }
+    }, { onClose: refreshCurrent });
+  }
+
+  function splitSentences(text) {
+    return (text.match(/[^.!?…]+[.!?…]+["'”’)\]]*\s*|[^.!?…]+$/g) || [text]).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  function openMyText() {
+    pushLayer('📥 Мой текст', function (body) {
+      body.innerHTML = '<div class="sub" style="margin-bottom:12px">Вставь любой английский текст: субтитры, мангу, пост, главу книги. Каждое слово можно будет нажать, каждое предложение — послушать и перевести.</div>';
+      var box = h('div', { class: 'surface trbox' });
+      var title = h('input', { class: 'srcinput', placeholder: 'Название (необязательно)', maxlength: '60' });
+      var ta = h('textarea', { placeholder: 'Вставь английский текст сюда…', maxlength: '6000', style: 'min-height:170px' });
+      box.appendChild(title); box.appendChild(ta);
+      body.appendChild(box);
+      var ob = h('button', { class: 'btn primary block mt' }, I.book + ' Открыть в читалке');
+      ob.addEventListener('click', function () {
+        var text = ta.value.trim();
+        if (text.length < 3) { ta.focus(); return; }
+        var t = title.value.trim() || text.split(/\s+/).slice(0, 5).join(' ') + '…';
+        S.texts = [{ id: 't' + Date.now().toString(36), title: t.slice(0, 60), text: text.slice(0, 6000), at: Date.now() }].concat(S.texts.filter(function (x) { return x.text !== text; })).slice(0, 6);
+        save();
+        readText(S.texts[0]);
+      });
+      body.appendChild(ob);
+      if (S.texts.length) {
+        body.appendChild(h('h2', {}, '🕘 Мои тексты'));
+        var list = h('div', { class: 'list' });
+        S.texts.forEach(function (tx) {
+          var b = h('button', { class: 'row-item' });
+          b.innerHTML = '<div class="em">📄</div><div class="tx"><div class="t">' + esc(tx.title) + '</div><div class="a">' + splitSentences(tx.text).length + ' предложений · ' + dayLabel(dayNum(new Date(tx.at))) + '</div></div>';
+          b.addEventListener('click', function () { readText(tx); });
+          var del = h('button', { class: 'iconbtn del' }, I.trash);
+          del.addEventListener('click', function (e) { e.stopPropagation(); S.texts = S.texts.filter(function (x) { return x.id !== tx.id; }); save(); b.remove(); });
+          b.appendChild(del);
+          list.appendChild(b);
+        });
+        body.appendChild(list);
+      }
+    });
+  }
+  function readText(tx) {
+    pushLayer('📄 ' + esc(tx.title), function (body) {
+      body.appendChild(h('div', { class: 'sub', style: 'margin-bottom:6px' }, '👆 Нажми на слово — перевод. 🔊 — послушать. 🌍 — перевод предложения. ⭐ — в находки.'));
+      var paras = tx.text.split(/\n\s*\n|\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+      var n = 0;
+      paras.forEach(function (p) {
+        splitSentences(p).forEach(function (s) {
+          n++;
+          var pit = { id: 'mytext', en: s, ru: '', w: [], c: 'books' };
+          var el = h('div', { class: 'para' });
+          el.innerHTML = '<div class="num">' + n + '</div><div class="en serif">' + wordsHTML(s) + '</div>' +
+            '<div class="tools"><button data-a="say">' + I.vol + '</button><button data-a="tr">' + I.globe + ' Перевод</button><button data-a="find">' + I.star + '</button></div><div class="ru serif hidden"></div>';
+          el.addEventListener('click', function (e) {
+            var w = e.target.closest('.w'); if (w) { wordSheet(w.textContent, pit, w); return; }
+            var a = e.target.closest('[data-a]'); if (!a) return;
+            var act = a.getAttribute('data-a'), ru = el.querySelector('.ru');
+            if (act === 'say') { if (a.classList.contains('playing')) tts.stop(); else tts.speak(s, a, null, el.querySelector('.en')); }
+            else if (act === 'tr') {
+              if (!ru.classList.contains('hidden')) { ru.classList.add('hidden'); return; }
+              ru.classList.remove('hidden'); ru.textContent = '…';
+              translateText(s).then(function (r) { ru.textContent = r; pit.ru = r; activity(1); }).catch(function () { ru.textContent = 'Нет связи с переводчиком 😕'; });
+            } else if (act === 'find') {
+              var save1 = function (r) { addFind(s, r, tx.title); };
+              if (pit.ru) save1(pit.ru); else translateText(s).then(save1).catch(function () { toast('Нужен интернет для перевода'); });
+            }
+          });
+          body.appendChild(el);
+        });
+      });
+      S.st.tr++; activity(2); save();
+    });
+  }
+
+  // =====================================================================
+  // 14i. Диктант и обратный перевод (ввод с клавиатуры)
+  // =====================================================================
+  function normWords(s) {
+    return String(s).toLowerCase().replace(/[’']/g, "'").replace(/\b(i'm)\b/g, 'i am').replace(/\b(it's)\b/g, 'it is').replace(/\b(don't)\b/g, 'do not').replace(/\b(can't)\b/g, 'can not').replace(/\bcannot\b/g, 'can not')
+      .replace(/\b(you're)\b/g, 'you are').replace(/\b(we're)\b/g, 'we are').replace(/\b(they're)\b/g, 'they are').replace(/\b(i'll)\b/g, 'i will').replace(/\b(that's)\b/g, 'that is').replace(/\b(doesn't)\b/g, 'does not').replace(/\b(didn't)\b/g, 'did not').replace(/\b(isn't)\b/g, 'is not').replace(/\b(won't)\b/g, 'will not')
+      .replace(/[^a-z0-9' ]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  }
+  // Сравнение ответа с оригиналом: какие слова оригинала совпали (наибольшая общая подпоследовательность)
+  function diffWords(orig, answer) {
+    var a = normWords(orig), b = normWords(answer);
+    var dp = []; for (var i = 0; i <= a.length; i++) { dp.push([]); for (var j = 0; j <= b.length; j++) dp[i].push(0); }
+    for (i = a.length - 1; i >= 0; i--) for (j = b.length - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    var ok = [], x = 0, y = 0;
+    while (x < a.length && y < b.length) { if (a[x] === b[y]) { ok[x] = true; x++; y++; } else if (dp[x + 1][y] >= dp[x][y + 1]) x++; else y++; }
+    return { words: a, ok: ok, score: a.length ? dp[0][0] / Math.max(a.length, b.length) : 0 };
+  }
+  function typingPool(mode) {
+    var max = Math.max(1, S.lvl || 1) + (mode === 'dict' ? 0 : 1);
+    var pool = ITEMS.filter(function (it) {
+      if (isIslam(it) || it.c === 'mine' || it.en.indexOf('\n') >= 0 || ['twisters', 'riddles', 'words', 'slang'].indexOf(it.c) >= 0) return false;
+      var n = (it.en.match(/[A-Za-z']+/g) || []).length;
+      return it.l <= max && n >= 2 && n <= (mode === 'dict' ? 9 : 11) && /^[A-Za-z0-9 ,.!?'’"“”-]+$/.test(it.en);
+    });
+    var hq = pool.filter(function (it) { return tts.hasNeural(it.en); });
+    var base = hq.length >= 15 ? hq : pool;
+    if ((S.lvl || 1) <= 2) {
+      var easy = base.filter(function (it) { return it.c === 'basics' || it.l === 1; });
+      if (easy.length >= 10) base = easy;
+    }
+    return base;
+  }
+  function startTyping(mode) {
+    var qs = shuffle(typingPool(mode)).slice(0, 5);
+    if (!qs.length) { toast('Пока не хватает фраз для этого режима'); return; }
+    var i = 0, total = 0;
+    var title = mode === 'dict' ? '🎧 Диктант' : '✍️ Обратный перевод';
+    pushLayer(title, function (body) {
+      function show() {
+        if (i >= qs.length) return finish();
+        var it = qs[i];
+        body.innerHTML = '<div class="qtop"><span>Фраза ' + (i + 1) + ' из ' + qs.length + '</span><span>' + lvChip(it.l) + '</span></div><div class="qprog"><i style="width:' + (i / qs.length * 100) + '%"></i></div>';
+        var card = h('div', { class: 'surface qcard' });
+        if (mode === 'dict') {
+          card.innerHTML = '<div class="hint">Послушай и напиши по-английски</div>';
+          var row = h('div', { class: 'tools-row', style: 'justify-content:center' });
+          var p1 = h('button', { class: 'btn primary' }, I.vol + ' Слушать');
+          var p2 = h('button', { class: 'btn' }, '🐢 Медленно');
+          p1.addEventListener('click', function () { tts.speak(it.en, p1); });
+          p2.addEventListener('click', function () { tts.speak(it.en, p2, 0.65); });
+          row.appendChild(p1); row.appendChild(p2); card.appendChild(row);
+          setTimeout(function () { tts.speak(it.en, p1); }, 300);
+        } else {
+          card.innerHTML = '<div class="hint">Переведи на английский</div><div class="q serif small">' + esc(it.ru) + '</div>' +
+            (it.w && it.w.length ? '<button class="btn sm ghost mt" id="hint">💡 Подсказка: слова</button><div class="hintbox hidden">' + it.w.map(function (p) { return '<b>' + esc(p[0]) + '</b> — ' + esc(p[1]); }).join('<br>') + '</div>' : '');
+          var hb = $('#hint', card);
+          if (hb) hb.addEventListener('click', function () { hb.remove(); $('.hintbox', card).classList.remove('hidden'); });
+        }
+        body.appendChild(card);
+        var inp = h('textarea', { class: 'typein', placeholder: 'Пиши здесь…', rows: '2', autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false' });
+        body.appendChild(inp);
+        var check = h('button', { class: 'btn primary block mt' }, 'Проверить');
+        check.addEventListener('click', function () {
+          var d = diffWords(it.en, inp.value);
+          total += d.score;
+          if (mode === 'dict') S.st.dict++; else S.st.back++;
+          activity(1); markSeen(it);
+          var pct = Math.round(d.score * 100);
+          var verdict = pct >= 90 ? '🌟 Отлично!' : pct >= 60 ? '👍 Почти!' : '💪 Ничего, в следующий раз получится';
+          var orig = d.words.map(function (w, k) { return '<span class="' + (d.ok[k] ? 'okw' : 'missw') + '">' + esc(w) + '</span>'; }).join(' ');
+          var res = h('div', { class: 'explain' }, '<b>' + verdict + '</b> · совпало ' + pct + '%<div class="diff">' + orig + '</div><div class="serif" style="margin-top:8px">' + esc(it.en) + '</div><div class="muted">' + esc(it.ru) + '</div>');
+          var say = h('button', { class: 'btn sm mt' }, I.vol + ' Послушать ещё раз');
+          say.addEventListener('click', function () { tts.speak(it.en, say); });
+          res.appendChild(say);
+          check.replaceWith(res);
+          inp.disabled = true;
+          if (pct >= 90) { addXP(3, res); haptic('success'); } else { addXP(1, res); haptic(pct >= 60 ? 'light' : 'error'); }
+          var nb = h('button', { class: 'btn primary block mt' }, i + 1 < qs.length ? 'Дальше →' : 'Результат');
+          nb.addEventListener('click', function () { i++; show(); });
+          body.appendChild(nb);
+          nb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+        body.appendChild(check);
+        if (mode !== 'dict') setTimeout(function () { inp.focus(); }, 300);
+      }
+      function finish() {
+        var pct = Math.round(total / qs.length * 100);
+        if (mode === 'dict') markPlan('listen');
+        body.innerHTML = '<div class="result"><div class="score">' + pct + '%</div><div class="msg">' + (pct >= 80 ? 'Ты отлично слышишь английский! 🎧' : pct >= 50 ? 'Хороший результат! 💪' : 'Слух тренируется — продолжай каждый день 🦉') + '</div><div class="sub">Средняя точность по ' + qs.length + ' фразам</div></div>';
+        var again = h('button', { class: 'btn primary block' }, 'Ещё раз');
+        again.addEventListener('click', function () { popLayer(); setTimeout(function () { startTyping(mode); }, 240); });
+        var back = h('button', { class: 'btn block mt' }, 'Готово');
+        back.addEventListener('click', popLayer);
+        body.appendChild(again); body.appendChild(back);
+        if (pct >= 70) confetti();
+        checkAch(); save();
+      }
+      show();
+    }, { onClose: refreshCurrent });
+  }
+
+  // =====================================================================
+  // 14j. Как люди учат языки (методика)
+  // =====================================================================
+  var METHOD = [
+    ['📖', 'Понятный ввод', 'Лингвист Стивен Крашен показал: язык усваивается, когда мы читаем и слушаем то, что понимаем почти полностью, — с небольшой долей нового. Исследования чтения (Пол Нейшн и др.) говорят: комфортно, когда знакомы около 95–98% слов.', 'Поэтому у каждой карточки есть уровень A1–C1, а лента «мой уровень» показывает твой уровень и на ступень выше.'],
+    ['🧱', 'Сначала самые частые слова', 'Слова встречаются очень неравномерно: первая тысяча самых частых слов покрывает примерно три четверти обычного текста, а в разговорной речи — ещё больше. Учить их первыми — самый быстрый путь к пониманию.', 'Курс «1000 главных слов» составлен по частотному словарю wordfreq: по 10 слов в день.'],
+    ['🔁', 'Интервальное повторение', 'Ещё в 1885 году Герман Эббингауз открыл «кривую забывания»: без повторения мы теряем бо́льшую часть нового за пару дней. Если повторять через растущие промежутки (1, 3, 7, 14, 30 дней), память закрепляется надолго.', 'Каждая оценка «Понял сам / Частично / Не понял» ставит карточку в такое расписание.'],
+    ['🧠', 'Вспоминать, а не перечитывать', 'Эксперименты Рёдигера и Карпике (2006) показали «эффект тестирования»: попытка вспомнить ответ укрепляет память сильнее, чем повторное чтение.', 'Поэтому перевод спрятан: сначала переводишь сам, потом проверяешь.'],
+    ['🎧', 'Читать и слушать одновременно', 'Когда видишь слово и тут же слышишь его, мозг связывает написание и звучание. Это помогает и чтению, и пониманию на слух.', 'Нейроголос подсвечивает каждое произносимое слово — как караоке. Есть медленная скорость.'],
+    ['🗣', 'Шэдоуинг: повторяй вслух', 'Повторять фразу вслух сразу за диктором — популярная техника переводчиков. Она тренирует произношение, ритм и уверенность в речи.', 'Нажми 🔊, послушай и повтори. В окне слова есть запись живого человеческого голоса.'],
+    ['✍️', 'Не только понимать, но и выдавать', 'Мерил Суэйн показала: когда пытаешься сам сказать или написать, замечаешь пробелы в знаниях («гипотеза вывода»).', 'Диктант и обратный перевод (с русского на английский) — в «Тренировке».'],
+    ['🧩', 'Фразы целиком', 'Носители говорят готовыми кусками: «How are you?», «Let\'s go», «I don\'t know». Если учить такие куски целиком, речь становится естественной.', 'Раздел «Основы» — 200+ готовых фраз на каждый день.'],
+    ['🌸', 'Интерес и эмоции', 'Эмоционально значимое запоминается лучше. Мотивация — один из самых сильных факторов успеха в языке.', 'Отсюда аниме, мрачные и трогательные истории, игры и книги, которые ты любишь.'],
+    ['🎯', 'Узкое чтение', 'Если читать много текстов на одну тему или одного автора, одни и те же слова возвращаются снова и снова и запоминаются сами (Стивен Крашен).', '«Аниме по тайтлам»: читай подряд Code Geass или SAO.'],
+    ['📘', 'Грамматика через примеры', 'Правила полезны, но запоминаются через живые примеры и практику, а не через зубрёжку таблиц.', 'Каждый урок: короткое правило, цитаты из аниме и кино, упражнение.'],
+    ['⏱', 'Каждый день понемногу', 'Распределённая практика работает лучше, чем одно долгое занятие: 15–20 минут каждый день дают больше, чем 2 часа в выходные. Сон помогает закрепить выученное.', '«Занятие на сегодня» — 6 коротких шагов. Серия дней 🔥 помогает не бросить.']
+  ];
+  function openMethod() {
+    pushLayer('🧪 Как учат языки', function (body) {
+      body.innerHTML = '<h1 style="margin:4px 0 6px">Как люди на самом деле учат языки</h1><div class="sub" style="margin-bottom:16px">Не «просто читать цитаты». Вот что говорят исследования — и как каждый принцип устроен в Inkwell.</div>';
+      METHOD.forEach(function (m, k) {
+        body.appendChild(h('div', { class: 'surface mcard' }, '<div class="mn">' + (k + 1) + '</div><div><b>' + m[0] + ' ' + esc(m[1]) + '</b><p>' + esc(m[2]) + '</p><div class="how">✨ ' + esc(m[3]) + '</div></div>'));
+      });
+      body.appendChild(h('h2', {}, '🗺 Твой путь от A1'));
+      body.appendChild(h('div', { class: 'surface pad roadmap' },
+        '<p><b>Месяц 1.</b> «Основы» (по 10 фраз в день) + курс слов (дни 1–30) + уроки грамматики A1. Лента — только A1.</p>' +
+        '<p><b>Месяц 2.</b> Курс слов (дни 31–60), уроки A2, диктант каждый день. Лёгкие рассказы и басни. Цитаты аниме уровня A1–A2.</p>' +
+        '<p><b>Месяц 3.</b> Курс слов до 100-го дня. Читаешь любимые тайтлы целиком, рассказы A2, «Мой текст» с субтитрами аниме.</p>' +
+        '<p><b>Дальше.</b> Тест уровня ещё раз, уровень B1: классика, речи, стихи. Аниме с английскими субтитрами.</p>'));
+      body.appendChild(h('div', { class: 'surface pad hadithbox' }, '<div class="k">📿 О пользе знания</div><div class="serif">«Кто встал на путь поиска знания, тому Аллах облегчит путь в Рай».</div><div class="faint" style="margin-top:6px">Сахих Муслим, 2699</div>'));
+    });
   }
 
   // =====================================================================
@@ -1586,7 +2751,8 @@
     root.appendChild(prof);
     root.appendChild(h('h2', {}, '📊 Статистика'));
     var st = h('div', { class: 'stats' });
-    [[seenCount(), 'прочитано карточек'], [selfPct + '%', 'понял сам'], [Object.keys(S.words).length, 'слов в словаре'],
+    [[S.lvl ? CEFR[S.lvl] : '—', 'мой уровень'], [Object.keys(S.course.done).length + '/' + COURSE_DAYS, 'дней курса'], [Object.keys(S.gram).length + '/' + GRAMMAR.length, 'уроков'],
+      [seenCount(), 'прочитано карточек'], [selfPct + '%', 'понял сам'], [Object.keys(S.words).length, 'слов в словаре'],
       ['🔥 ' + streakNow(), 'дней подряд'], [S.streak.best, 'лучшая серия'], [S.quiz.best + '/10', 'рекорд квиза'],
       [storiesDone() + '/' + STORIES.length, 'рассказов'], [Object.keys(S.fav).length, 'в избранном'], [Object.keys(S.ach).length + '/' + ACH.length, 'достижений']
     ].forEach(function (s) { st.appendChild(h('div', { class: 'stat' }, '<b>' + s[0] + '</b><small>' + s[1] + '</small>')); });
@@ -1642,10 +2808,20 @@
       box.appendChild(th);
       box.appendChild(segRow('Размер текста', 'Для карточек и рассказов', [['0.9', 'A−'], ['1', 'A'], ['1.12', 'A+'], ['1.25', 'A++']], String(S.set.font), function (v) { S.set.font = +v; applyTheme(); }));
       box.appendChild(segRow('Цель дня', 'Сколько действий в день', [['10', '10'], ['15', '15'], ['25', '25'], ['40', '40']], String(S.set.goal), function (v) { S.set.goal = +v; }));
-      box.appendChild(segRow('Скорость речи', 'Озвучка английского', [['0.7', '🐢'], ['0.9', 'Обычно'], ['1.05', '🐇']], String(S.set.rate), function (v) { S.set.rate = +v; tts.speak('This is how I sound.'); }));
+      box.appendChild(segRow('Скорость речи', 'Для новичка лучше помедленнее', [['0.7', '🐢'], ['0.8', '0.8'], ['0.9', '0.9'], ['1', '1×']], String(S.set.rate), function (v) { S.set.rate = +v; tts.speak('Hello! This is how I sound. Nice to meet you.'); }));
+      box.appendChild(switchRow('Подсветка слов', 'Караоке: слово светится, пока звучит', 'karaoke'));
       box.appendChild(switchRow('Сначала думай', 'Прятать перевод, пока сам не переведёшь', 'hide'));
       box.appendChild(switchRow('Автолистание', 'После оценки переходить к следующей карточке', 'auto'));
+      box.appendChild(switchRow('☪️ Ислам в общей ленте', 'Аяты и хадисы среди обычных карточек (никогда — в смешном и жутком)', 'islamFeed'));
       body.appendChild(box);
+
+      body.appendChild(h('h2', {}, '🎯 Мой уровень'));
+      var lb = h('div', { class: 'surface', style: 'overflow:hidden' });
+      lb.appendChild(segRow('Уровень', S.lvl ? CEFR_NAME[S.lvl] : 'Не выбран — пройди тест', [['1', 'A1'], ['2', 'A2'], ['3', 'B1'], ['4', 'B2'], ['5', 'C1']], String(S.lvl), function (v) { setLevel(+v); toast('Уровень: ' + CEFR[+v]); }));
+      var tb = h('button', { class: 'btn ghost block', style: 'border:0;border-radius:0' }, '🎯 Пройти тест уровня');
+      tb.addEventListener('click', startLevelTest);
+      lb.appendChild(tb);
+      body.appendChild(lb);
 
       body.appendChild(h('h2', {}, '💾 Данные'));
       var info = h('div', { class: 'surface pad sub' }, cloud.ok() ? '☁️ Прогресс сохраняется в облаке Telegram — он будет с тобой на телефоне и на компьютере.' : '💾 Прогресс сохраняется на этом устройстве.');
@@ -1689,7 +2865,8 @@
     var t = S.set.theme;
     if (t === 'auto') t = (tg && tg.colorScheme === 'light') || (!inTG && window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'day' : 'night';
     document.documentElement.setAttribute('data-theme', t);
-    document.documentElement.style.setProperty('--fs', S.set.font);
+    // Для новичка (A1) текст карточек чуть крупнее
+    document.documentElement.style.setProperty('--fs', S.set.font * (S.lvl === 1 ? 1.06 : 1));
     try {
       if (ver('6.1')) { tg.setHeaderColor(THEME_BG[t]); tg.setBackgroundColor(THEME_BG[t]); }
       if (ver('7.10') && tg.setBottomBarColor) tg.setBottomBarColor(THEME_BG[t]);
@@ -1699,7 +2876,7 @@
 
   function onboarding() {
     var slides = [
-      ['📚', 'Добро пожаловать в Inkwell', 'Здесь больше ' + Math.floor(ITEMS.length / 100) * 100 + ' цитат, стихов, диалогов, жутких и трогательных историй — от Шекспира до аниме. Целые рассказы с переводом. И всё это — чтобы ты заговорил по-английски.'],
+      ['📚', 'Добро пожаловать в Inkwell', 'Больше ' + Math.floor(ITEMS.length / 100) * 100 + ' карточек: фразы на каждый день, аниме, кино, книги, аяты и хадисы. Курс «1000 слов», грамматика, целые рассказы с живым голосом. Всё — чтобы ты заговорил по-английски.'],
       ['🤔', 'Сначала думай сам', 'Читай по-английски и переводи в голове. Перевод спрятан — нажми, когда будешь готов себя проверить. Любое слово можно нажать и узнать перевод.'],
       ['🔁', 'Честно оцени себя', '«Понял сам», «Частично» или «Не понял». То, что было сложно, вернётся завтра — так работает интервальное повторение, и слова остаются в памяти надолго.'],
       ['🔥', 'Каждый день понемногу', 'Выполняй цель дня, держи серию, получай уровни и достижения. Твой прогресс сохраняется в Telegram.']
@@ -1722,7 +2899,7 @@
       b.addEventListener('click', function () {
         haptic('light');
         if (i < slides.length - 1) { i++; render(); }
-        else { S.onb = true; save(); L.classList.add('out'); setTimeout(function () { L.remove(); }, 230); }
+        else { S.onb = true; S.ver = APP_VER; save(); L.classList.add('out'); setTimeout(function () { L.remove(); }, 230); if (!S.lvl) setTimeout(startLevelTest, 300); }
       });
       onb.appendChild(b);
     }
@@ -1732,18 +2909,72 @@
   // =====================================================================
   // 18. Старт
   // =====================================================================
+  var APP_VER = 3;
   function start() {
     applyTheme();
+    syncFinds();
+    feedState.filter = myFeed();
     buildNav();
-    var startTab = 'home';
+    var startTab = 'home', sp = '';
     try {
-      var sp = inTG && tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+      sp = (inTG && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+      if (!sp) { var mq = /[?&]open=([a-z]+)/.exec(location.search); if (mq) sp = mq[1]; }
       if (sp === 'feed') startTab = 'feed';
       else if (sp === 'review') startTab = 'practice';
     } catch (e) {}
     showTab(startTab);
     checkAch();
+    // Когда загрузится индекс нейро-озвучки — пометить кнопки 🔊 значком HD
+    try {
+      if (window.InkVoice && window.InkVoice.ready) window.InkVoice.ready().then(function () {
+        $$('.fcard[data-id]').forEach(function (el) {
+          var it = BY_ID[el.getAttribute('data-id')], b = el.querySelector('[data-act=tts]');
+          if (it && b && tts.hasNeural(it.en)) b.classList.add('hq');
+        });
+      });
+    } catch (e) {}
     if (!S.onb) onboarding();
+    else if ((S.ver || 0) < APP_VER) whatsNew();
+    else if (sp === 'islam') openIslam();
+    else if (sp === 'course') openCourse();
+    else if (sp === 'grammar') openGrammar();
+    else if (sp === 'test') startLevelTest();
+  }
+
+  // «Что нового» — один раз после большого обновления
+  function whatsNew() {
+    var slides = [
+      ['🎉', 'Большое обновление!', 'Inkwell теперь учит английскому с самого нуля — и не только им. Вот что появилось.'],
+      ['🎯', 'Твой уровень', 'У каждой карточки есть уровень A1–C1. Пройди тест за 3 минуты — и лента покажет то, что тебе по силам, а озвучка станет медленнее.'],
+      ['🧱', 'Учёба с нуля', '«1000 главных слов» по 10 в день, 200+ фраз «Основы» на каждый день и ' + GRAMMAR.length + ' уроков грамматики на цитатах из аниме и кино.'],
+      ['☪️', 'Ислам', 'Аяты с арабским текстом, чтением и переводом смыслов, достоверные хадисы, дуа, 99 имён Аллаха, истории пророков. Всё с источниками.'],
+      ['🎧', 'Живой голос', 'Нейроголос читает карточки и рассказы и подсвечивает каждое слово, как караоке. Диктант, обратный перевод и аудио-режим в ленте.'],
+      ['🛠', 'Твои инструменты', '«Мой текст» — вставь любой английский текст. «Мои находки» — сохраняй фразы из любимых аниме. «Занятие на сегодня» — 6 коротких шагов каждый день.']
+    ];
+    var i = 0;
+    var L = h('section', { class: 'layer', style: 'z-index:70' });
+    document.body.appendChild(L);
+    function close() { S.ver = APP_VER; save(); L.classList.add('out'); setTimeout(function () { L.remove(); }, 230); }
+    function render() {
+      var s = slides[i], last = i === slides.length - 1;
+      L.innerHTML = '<div class="onb"><div class="big">' + s[0] + '</div><h1>' + s[1] + '</h1><p>' + s[2] + '</p>' +
+        '<div class="dots">' + slides.map(function (_, j) { return '<i class="' + (j === i ? 'on' : '') + '"></i>'; }).join('') + '</div></div>';
+      var onb = $('.onb', L);
+      var b = h('button', { class: 'btn primary block' }, last ? (S.lvl ? 'Поехали! 🚀' : '🎯 Пройти тест уровня') : 'Дальше');
+      b.addEventListener('click', function () {
+        haptic('light');
+        if (!last) { i++; render(); return; }
+        close();
+        if (!S.lvl) setTimeout(startLevelTest, 260);
+      });
+      onb.appendChild(b);
+      if (last && !S.lvl) {
+        var later = h('button', { class: 'btn ghost block' }, 'Позже');
+        later.addEventListener('click', close);
+        onb.appendChild(later);
+      }
+    }
+    render();
   }
   var booted = false;
   function boot(changed) {

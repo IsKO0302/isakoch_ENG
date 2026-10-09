@@ -453,6 +453,148 @@ h2 button { text-transform: none; letter-spacing: 0; color: var(--accent); font-
 .dots i { width: 7px; height: 7px; border-radius: 4px; background: var(--line); transition: .3s; }
 .dots i.on { width: 22px; background: var(--accent); }
 
+/* ============ Обновление 3: уровни, ислам, учёба, инструменты ============ */
+.cefr { --lc: #22c55e; display: inline-flex; align-items: center; justify-content: center; min-width: 30px; padding: 2px 7px; border-radius: 8px; font-size: 11px; font-weight: 800; letter-spacing: .4px; color: var(--lc); background: color-mix(in srgb, var(--lc) 16%, transparent); border: 1px solid color-mix(in srgb, var(--lc) 40%, transparent); vertical-align: middle; font-family: Manrope, sans-serif; }
+.lvl { margin-left: auto; letter-spacing: 0; }
+.cefr-big { --lc: #22c55e; display: inline-grid; place-items: center; width: 120px; height: 120px; border-radius: 36px; font-size: 52px; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--lc), color-mix(in srgb, var(--lc) 55%, #000)); box-shadow: 0 14px 40px color-mix(in srgb, var(--lc) 45%, transparent); }
+
+/* Караоке: слово, которое звучит прямо сейчас */
+.w.say { background: color-mix(in srgb, var(--c, var(--accent)) 38%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c, var(--accent)) 38%, transparent); }
+.fab.hq::after { content: "HD"; position: absolute; bottom: -4px; right: -4px; font-size: 8px; font-weight: 800; padding: 1px 4px; border-radius: 6px; background: var(--good); color: #fff; letter-spacing: .3px; }
+.fab.recite { color: #10b981; }
+
+/* Арабский текст */
+.fc-ar, .q-ar, .bism .a, .iday .a, .wbw-row .a { font-family: "Amiri Quran", Amiri, "Noto Naskh Arabic", "Geeza Pro", "Traditional Arabic", serif; direction: rtl; text-align: right; }
+.fc-ar { font-size: calc(25px * var(--fs)); line-height: 2.05; margin-bottom: 12px; color: var(--text); word-spacing: 2px; }
+.fc-ar.big { font-size: calc(46px * var(--fs)); line-height: 1.6; text-align: center; margin-bottom: 4px; }
+.fc-tr { font-style: italic; color: var(--muted); font-size: 14.5px; margin-bottom: 10px; font-weight: 600; }
+.islamic .fc-tr { text-align: left; }
+.fc-en.sm { font-size: calc(min(var(--en-size, 22px), 21px) * var(--fs)); }
+.islamic { --c: #10b981; }
+.srcrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.srcbtn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 11px; font-size: 12.5px; font-weight: 800; color: var(--muted); background: color-mix(in srgb, var(--card2) 80%, transparent); border: 1px solid var(--line); }
+.srcbtn svg { width: 14px; height: 14px; }
+.q-ar { font-size: 30px; line-height: 1.8; text-align: center; margin-bottom: 6px; }
+.wbw { display: flex; flex-direction: column; gap: 8px; }
+.wbw-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "a a" "t e"; gap: 2px 12px; padding: 10px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.wbw-row .a { grid-area: a; font-size: 26px; line-height: 1.7; }
+.wbw-row .t { grid-area: t; font-style: italic; color: var(--muted); font-size: 13.5px; }
+.wbw-row .e { grid-area: e; font-weight: 700; font-size: 14px; text-align: right; }
+.bism { padding: 20px 18px; text-align: center; background: radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, #10b981 22%, transparent), transparent 70%), var(--card); }
+.bism .a { font-size: 30px; line-height: 1.9; text-align: center; }
+.bism .e { font-size: 16px; margin-top: 6px; }
+.bism .r { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+
+/* Аудио-режим ленты */
+.listenbtn { padding: 8px 10px; }
+.listenbtn.on { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
+.fcard .listen-hint { display: none; }
+.fcard.listen .fc-en { filter: blur(9px); opacity: .45; }
+.fcard.listen .listen-hint { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.fcard.listen .listen-hint b { color: var(--text); font-size: 14px; }
+
+.chips.wrap { flex-wrap: wrap; margin: 0; padding: 0; overflow: visible; }
+
+/* Главная */
+.lvlbox { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 14px 16px; margin-top: 12px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.lvlbox b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+.lvlbox .cefr { font-size: 15px; min-width: 44px; padding: 8px 6px; border-radius: 12px; }
+.lvlbox.cta { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), var(--card); }
+.lvlbox .em { font-size: 30px; }
+.plan { padding: 6px; display: flex; flex-direction: column; }
+.planrow { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 16px; text-align: left; transition: background .15s; }
+.planrow:active { background: var(--card2); }
+.planrow .pi { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; font-size: 19px; background: var(--card2); }
+.planrow.ok .pi { background: color-mix(in srgb, var(--good) 22%, transparent); color: var(--good); font-weight: 800; }
+.planrow .pt { flex: 1; min-width: 0; }
+.planrow .pt b { display: block; font-size: 14.5px; }
+.planrow .pt small { display: block; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.planrow.ok .pt b { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--good) 70%, transparent); }
+.planrow .pa { color: var(--faint); font-size: 22px; }
+.iday { display: block; width: 100%; text-align: left; padding: 14px 16px; margin-bottom: 10px; --c: #10b981; background: radial-gradient(110% 90% at 100% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 65%), var(--card); }
+.iday .k { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.iday .a { font-size: 22px; line-height: 1.9; margin: 6px 0 2px; }
+.iday .e { font-size: 15.5px; line-height: 1.5; }
+.qgrid { grid-template-columns: repeat(3, 1fr); }
+.w-ipa, .ipa { color: var(--muted); font-size: 14px; font-family: "Segoe UI", "Lucida Sans Unicode", "DejaVu Sans", sans-serif; margin-top: 2px; }
+.ipa-s { color: var(--faint); font-weight: 500; font-size: 13px; font-family: "Segoe UI", "Lucida Sans Unicode", sans-serif; }
+.methodbtn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 16px; margin-top: 22px; font-size: 13px; color: var(--muted); }
+.methodbtn > b { font-size: 30px; }
+.methodbtn span b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+
+/* Библиотека */
+.animebtn { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 16px; margin-top: 12px; font-size: 13px; color: var(--muted); --c: #ff4f9a; background: radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--c) 26%, transparent), transparent 65%), var(--card); }
+.animebtn > b { font-size: 32px; }
+.animebtn span { flex: 1; }
+.animebtn span b { display: block; color: var(--text); font-size: 16px; margin-bottom: 2px; }
+.animebtn i { font-style: normal; font-size: 24px; color: var(--faint); }
+.titles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.titlecard { --c: var(--accent); position: relative; overflow: hidden; text-align: left; padding: 14px 12px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
+.titlecard::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 30%, transparent), transparent 65%); opacity: calc(var(--glow) * 2.2); pointer-events: none; }
+.titlecard b { position: relative; display: block; font-size: 14px; line-height: 1.25; min-height: 35px; }
+.titlecard small { position: relative; display: block; color: var(--muted); font-size: 11.5px; margin-top: 6px; font-weight: 600; }
+.titlecard .mbar { position: relative; height: 4px; border-radius: 3px; background: var(--card2); margin-top: 8px; overflow: hidden; }
+.titlecard .mbar i { display: block; height: 100%; background: var(--c); }
+.iconbtn.del { width: 34px; height: 34px; border-radius: 11px; flex: none; color: var(--muted); }
+.iconbtn.del svg { width: 16px; height: 16px; }
+
+/* Курс */
+.coursehead { padding: 18px; }
+.coursehead .big { font-size: 34px; font-weight: 800; letter-spacing: -.8px; margin-bottom: 10px; }
+.coursehead .big small { font-size: 16px; color: var(--muted); font-weight: 700; letter-spacing: 0; }
+.daygrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; }
+.day { aspect-ratio: 1; border-radius: 12px; background: var(--card); border: 1px solid var(--line); font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.day.done { background: color-mix(in srgb, var(--good) 20%, var(--card)); color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.day.cur { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
+.day.lock { opacity: .4; }
+.learncard .big { font-size: 40px; }
+.learncard .ipa { font-size: 16px; margin-top: 4px; }
+.learncard .tr { font-size: 21px; font-weight: 700; margin-top: 12px; }
+.exbox { text-align: left; margin-top: 18px; padding: 14px; border-radius: 16px; background: var(--card2); }
+.exbox .k { font-size: 11.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+.exbox .en { font-size: calc(17px * var(--fs)); line-height: 1.5; }
+.exbox .veil { margin-top: 10px; background: var(--card); min-height: 50px; }
+.tools-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Грамматика */
+.row-item.lesson.done .em { filter: none; }
+.row-item.lesson .t { font-weight: 800; -webkit-line-clamp: 2; }
+.lesson-head { margin-bottom: 14px; }
+.lesson-head h1 { margin: 10px 0 4px; }
+.ltext { font-size: 15.5px; line-height: 1.6; margin: 12px 0; }
+.ltext b, .ltip b, .ltable b { color: var(--accent); }
+.ltip { margin: 14px 0; padding: 12px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.55; background: color-mix(in srgb, var(--warn) 14%, var(--card)); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+.ltable { overflow-x: auto; margin: 12px 0; border-radius: 16px; border: 1px solid var(--line); background: var(--card); }
+.ltable table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.ltable th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); padding: 10px 12px; background: var(--card2); }
+.ltable td { padding: 9px 12px; border-top: 1px solid var(--line); line-height: 1.4; vertical-align: top; }
+.lex { position: relative; padding: 14px 58px 14px 16px; margin-bottom: 10px; }
+.lex .en { font-size: calc(17px * var(--fs)); line-height: 1.5; }
+.lex .src { color: var(--muted); font-size: 12.5px; font-weight: 700; margin-top: 4px; }
+.lex .veil { margin-top: 10px; min-height: 48px; }
+.lex .iconbtn { position: absolute; top: 12px; right: 12px; }
+
+/* Ввод текста: находки, мой текст, диктант */
+.srcinput { width: 100%; border: 0; border-bottom: 1px solid var(--line); outline: 0; background: transparent; padding: 12px 14px; font-size: 15px; }
+.typein { width: 100%; min-height: 70px; resize: vertical; border-radius: 18px; border: 2px solid var(--line); background: var(--card); outline: 0; padding: 14px; font-size: 17px; line-height: 1.45; }
+.typein:focus { border-color: var(--accent); }
+.diff { margin-top: 8px; line-height: 1.9; }
+.diff .okw { color: var(--good); font-weight: 800; }
+.diff .missw { color: var(--bad); font-weight: 800; text-decoration: underline wavy; text-decoration-thickness: 1px; }
+.hintbox { margin-top: 10px; font-size: 14px; line-height: 1.6; text-align: left; color: var(--muted); }
+.pnote { margin-top: 8px; font-size: 13.5px; color: var(--muted); font-family: Manrope, sans-serif; }
+
+/* Методика */
+.mcard { display: flex; gap: 14px; padding: 16px; margin-bottom: 10px; }
+.mcard .mn { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 13px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.mcard b { font-size: 15.5px; }
+.mcard p { margin: 6px 0 8px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.mcard .how { font-size: 13.5px; font-weight: 700; line-height: 1.45; }
+.roadmap p { margin: 0 0 10px; font-size: 14px; line-height: 1.55; }
+.roadmap p:last-child { margin: 0; }
+.hadithbox { margin-top: 12px; text-align: center; font-size: 16px; line-height: 1.5; }
+.hadithbox .k { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+
 .empty { text-align: center; padding: 40px 20px; color: var(--muted); line-height: 1.55; }
 .empty b { display: block; font-size: 44px; margin-bottom: 10px; }
 .spacer { height: 12px; }
