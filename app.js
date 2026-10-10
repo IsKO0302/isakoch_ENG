@@ -1057,8 +1057,9 @@
     return (u && u.first_name) || 'друг';
   }
   function dailyItem() {
-    var max = (S.lvl || 4) + 1;
-    var pool = ITEMS.filter(function (it) { return !isIslam(it) && it.c !== 'mine' && it.l <= max && it.en.length < 260 && ['idioms', 'slang', 'twisters', 'riddles', 'basics'].indexOf(it.c) < 0; });
+    // новичку (A1) — находка ровно его уровня и покороче; остальным — свой уровень и на ступень выше
+    var max = S.lvl === 1 ? 1 : (S.lvl || 4) + 1, maxLen = S.lvl === 1 ? 150 : 260;
+    var pool = ITEMS.filter(function (it) { return !isIslam(it) && it.c !== 'mine' && it.l <= max && it.en.length < maxLen && ['idioms', 'slang', 'twisters', 'riddles', 'basics'].indexOf(it.c) < 0; });
     if (!pool.length) pool = ITEMS.filter(function (it) { return !isIslam(it); });
     return pool[(today() * 7919) % pool.length];
   }
@@ -1863,6 +1864,10 @@
           if (m) { cands.push({ it: it, word: m[0], ru: it.w[j][1] }); break; }
         }
       });
+      if (S.lvl) {  // по уровню ученика, если подходящих фраз хватает
+        var fitC = cands.filter(function (c) { return (c.it.l || 3) <= S.lvl + 1; });
+        if (fitC.length >= 15) cands = fitC;
+      }
       shuffle(cands).slice(0, 10).forEach(function (c) {
         var re = new RegExp('\\b' + c.word + '\\b');
         var parts = c.it.en.split(re);
@@ -1900,6 +1905,12 @@
       // Квиз о вере: значения слов и имён, источник (Коран или хадис), смысл аята/хадиса/дуа
       var iw = (BY_CAT.iwords || []).concat(BY_CAT.names || []).filter(function (it) { return it.tr; });
       var texts = (BY_CAT.quran || []).concat(BY_CAT.hadith || [], BY_CAT.dua || []).filter(function (it) { return it.en.length < 260; });
+      // по уровню ученика: новичку — короткие и простые аяты и хадисы (если таких хватает)
+      if (S.lvl) {
+        var maxLen = S.lvl <= 1 ? 170 : S.lvl === 2 ? 220 : 260;
+        var fit = texts.filter(function (it) { return (it.l || 3) <= S.lvl + 1 && it.en.length < maxLen; });
+        if (fit.length >= 10) texts = fit;
+      }
       var ruW = iw.map(function (it) { return it.ru; }), ruT = texts.map(function (it) { return it.ru; });
       shuffle(iw).slice(0, 4).forEach(function (it) {
         qs.push({ hint: it.c === 'names' ? 'Что означает это имя Аллаха?' : 'Что означает это слово?', q: it.tr, ar: it.ar, ans: it.ru, opts: distinctOpts(it.ru, ruW, 4), explain: '<span class="serif">' + esc(it.en) + '</span>', item: it });
@@ -2197,9 +2208,11 @@
       }
       function quiz() {
         popLayer();
-        var ruPool = COURSE.map(function (c) { return c[1]; });
+        // в вариантах — только главное значение: «из; (родительный падеж…)» → «из», иначе верный ответ видно по длине
+        var short = function (ru) { return String(ru).split(/\s*[;(]/)[0].trim() || String(ru); };
+        var ruPool = COURSE.map(function (c) { return short(c[1]); });
         var qs = shuffle(words).map(function (c) {
-          return { hint: 'Что значит это слово?', q: c[0], say: c[0], ans: c[1], opts: distinctOpts(c[1], ruPool, 4), word: c };
+          return { hint: 'Что значит это слово?', q: c[0], say: c[0], ans: short(c[1]), opts: distinctOpts(short(c[1]), ruPool, 4), word: c, explain: short(c[1]) !== c[1] ? esc(c[1]) : undefined };
         });
         var res = {};
         setTimeout(function () {
