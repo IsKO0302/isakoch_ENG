@@ -604,3 +604,9 @@ h2 button { text-transform: none; letter-spacing: 0; color: var(--accent); font-
 /* Голос диктора Dan (ElevenLabs) */
 .fab.hq.pro::after { content: attr(data-v); background: #c2861a; }
 .voice-by { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: var(--text); background: rgba(194, 134, 26, .16); border: 1px solid rgba(194, 134, 26, .35); }
+
+/* Озвучка: «loading» — клип скачивается (мерцает), «playing» — звучит */
+.loading { animation: inkwait .8s ease-in-out infinite; }
+@keyframes inkwait { 50% { opacity: .45; } }
+.fab.loading { color: var(--accent); }
+button.playing:not(.fab) { color: var(--accent); }

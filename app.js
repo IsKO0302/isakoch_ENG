@@ -423,11 +423,13 @@
       try { if (window.InkVoice && window.InkVoice.stop) window.InkVoice.stop(); } catch (e) {}
       try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
       if (tts.audio) { try { tts.audio.pause(); } catch (e) {} tts.audio = null; }
+      if (tts.guard) { clearTimeout(tts.guard); tts.guard = 0; }
       tts.queue = [];
       tts.reciteTok = null;
       tts.unmark();
-      if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; }
+      if (tts.btn) { tts.btn.classList.remove('playing', 'loading'); tts.btn = null; }
     },
+    guard: 0,
     kel: null, kcur: null, reciteTok: null,
     // Караоке: подсветка слова, которое сейчас звучит (i — номер слова-span .w внутри kel)
     mark: function (i) {
@@ -452,6 +454,23 @@
       var vi = tts.voiceInfo(tts.voiceOf(text));
       return vi ? ' pro" data-v="' + vi.badge : '';
     },
+    // Одно слово: своя запись (слова курса) → это же слово из записи фразы (тот же диктор) → голос устройства.
+    // Раньше слова вне курса читал голос телефона, а в Telegram на Android его часто нет — была тишина
+    sayWord: function (word, it, spanEl, rate) {
+      var r = rate || 0.85;
+      if (tts.hasNeural(word)) return tts.speak(word, null, r);
+      try {
+        if (it && it.en && spanEl && window.InkVoice && window.InkVoice.playWord) {
+          var box = spanEl.closest('.fc-en, .en') || spanEl.parentNode;
+          var i = Array.prototype.indexOf.call(box.querySelectorAll('.w'), spanEl);
+          if (i >= 0) {
+            tts.stop();
+            if (window.InkVoice.playWord(it.en, i, { rate: r, onFail: function () { tts.speak(word, null, r); } })) return;
+          }
+        }
+      } catch (e) {}
+      tts.speak(word, null, r);
+    },
     // text — английский текст; btn — кнопка (мигает во время речи); rate — скорость; el — где подсвечивать слова
     speak: function (text, btn, rate, el, onEnd) {
       tts.stop();
@@ -459,22 +478,37 @@
       if (!raw.trim()) return;
       text = raw.replace(/\n+/g, ' ').replace(/[“”«»]/g, '"').replace(/—/g, ', ').trim();
       S.st.tts++; checkAch(); save();
-      if (btn) { tts.btn = btn; btn.classList.add('playing'); }
+      // кнопка: «loading» — клип скачивается (повторное нажатие перезапустит, а не остановит), «playing» — звучит
+      if (btn) { tts.btn = btn; btn.classList.add('loading'); }
       if (el && S.set.karaoke !== false) tts.kel = el;
       var r = rate || S.set.rate || 0.9;
       var tok = tts.tok = {};
+      var sounding = function () {
+        if (tts.tok !== tok) return;
+        if (tts.btn) { tts.btn.classList.remove('loading'); tts.btn.classList.add('playing'); }
+      };
       // done срабатывает только для текущей озвучки (старые события после stop() игнорируются)
       var done = function () {
         if (tts.tok !== tok) return;
         tts.tok = null; tts.unmark();
-        if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; }
+        if (tts.guard) { clearTimeout(tts.guard); tts.guard = 0; }
+        if (tts.btn) { tts.btn.classList.remove('playing', 'loading'); tts.btn = null; }
         if (onEnd) onEnd();
       };
+      // страховка: если за 25 с звук так и не пошёл (совсем плохая связь) — голос устройства
+      if (tts.guard) clearTimeout(tts.guard);
+      tts.guard = setTimeout(function () {
+        if (tts.tok === tok && tts.btn && tts.btn.classList.contains('loading')) {
+          try { if (window.InkVoice) window.InkVoice.stop(); } catch (e) {}
+          fallback();
+        }
+      }, 25000);
       // 1) Нейроголос (заранее записанный, с таймингами слов)
       if (window.InkVoice && window.InkVoice.play) {
         try {
           if (window.InkVoice.play(raw, {
             rate: r,
+            onStart: sounding,
             onWord: function (i) { if (tts.tok === tok) tts.mark(i); },
             onEnd: done,
             onFail: function () { if (tts.tok === tok) fallback(); }
@@ -483,6 +517,9 @@
       }
       fallback();
       function fallback() {
+      if (tts.tok !== tok) return;
+      if (tts.guard) { clearTimeout(tts.guard); tts.guard = 0; }
+      sounding();
       // 2) Голос устройства
       if (tts.voices.length) {
         try {
@@ -497,16 +534,23 @@
             tts.mark(k);
           };
           window.speechSynthesis.speak(u);
+          // некоторые WebView не присылают onend — снимаем «играет» по примерной длительности фразы
+          tts.guard = setTimeout(done, 4000 + text.length * 110 / r);
           return;
         } catch (e) {}
       }
       // 3) Запасной вариант: голос Google (если в WebView нет встроенных голосов)
       tts.queue = chunk(text, 180);
+      var ga = sharedAudio();
       var next = function () {
+        if (tts.tok !== tok) return;
         if (!tts.queue.length) return done();
-        var a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&ttsspeed=' + (r < 0.85 ? 0.6 : 1) + '&q=' + encodeURIComponent(tts.queue.shift()));
-        tts.audio = a; a.onended = next; a.onerror = function () { done(); toast('Озвучка недоступна на этом устройстве 😕'); };
-        a.play().catch(function () { done(); });
+        ga.onended = next;
+        ga.onerror = function () { if (tts.tok === tok) { done(); toast('Озвучка недоступна на этом устройстве 😕'); } };
+        ga.src = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&ttsspeed=' + (r < 0.85 ? 0.6 : 1) + '&q=' + encodeURIComponent(tts.queue.shift());
+        tts.audio = ga;
+        var pr = ga.play();
+        if (pr && pr.catch) pr.catch(function (e) { if (tts.tok === tok && !(e && e.name === 'AbortError')) done(); });
       };
       next();
       }
@@ -524,6 +568,14 @@
   }
   tts.init();
 
+  // Второй общий звуковой элемент (чтение Корана, запасной голос Google): создаётся один раз
+  var _shared = null;
+  function sharedAudio() {
+    if (!_shared) { _shared = new Audio(); _shared.preload = 'auto'; }
+    try { _shared.pause(); } catch (e) {}
+    _shared.onended = _shared.onerror = null;
+    return _shared;
+  }
   // Чтение Корана (Мишари Рашид Аль-Афаси, everyayah.com): аяты по порядку
   function pad3(n) { return ('00' + n).slice(-3); }
   function recite(vk, btn) {
@@ -533,13 +585,16 @@
     if (btn) { tts.btn = btn; btn.classList.add('playing'); }
     var tok = tts.reciteTok = {};
     var done = function () { if (tts.btn) { tts.btn.classList.remove('playing'); tts.btn = null; } };
+    // один и тот же элемент на все аяты: телефоны разрешают ему играть и без нового нажатия
+    var au = sharedAudio();
     var next = function () {
       if (a > b || tts.reciteTok !== tok) return done();
-      var au = new Audio('https://everyayah.com/data/Alafasy_128kbps/' + pad3(s) + pad3(a) + '.mp3');
-      tts.audio = au; a++;
       au.onended = next;
-      au.onerror = function () { done(); toast('Нет связи с сервером чтения Корана 😕'); };
-      au.play().catch(function () { done(); });
+      au.onerror = function () { if (tts.reciteTok === tok) { done(); toast('Нет связи с сервером чтения Корана 😕'); } };
+      au.src = 'https://everyayah.com/data/Alafasy_128kbps/' + pad3(s) + pad3(a) + '.mp3';
+      tts.audio = au; a++;
+      var pr = au.play();
+      if (pr && pr.catch) pr.catch(function (e) { if (tts.reciteTok === tok && !(e && e.name === 'AbortError')) done(); });
     };
     S.st.faith++; save();
     next();
@@ -883,7 +938,7 @@
     var word = raw.replace(/’/g, "'").replace(/^'+|'+$/g, '');
     var found = lookup(word, it);
     haptic('select');
-    tts.speak(word, null, 0.85);
+    tts.sayWord(word, it, spanEl, 0.85);
     openSheet(function (sh) {
       sh.classList.add('wordsheet');
       var key = found ? found.en : word.toLowerCase();
@@ -900,7 +955,7 @@
         (it ? '<div class="ctx serif">' + highlightIn(it.en, word) + '</div>' : '');
       var acts = sh.querySelector('.actions');
       var bSay = h('button', { class: 'btn sm' }, I.vol + ' Произнести');
-      bSay.addEventListener('click', function () { tts.speak(word, null, 0.8); });
+      bSay.addEventListener('click', function () { tts.sayWord(word, it, spanEl, 0.8); });
       var bAdd = h('button', { class: 'btn sm primary' }, inDict() ? I.check + ' В словаре' : I.plus + ' В мой словарь');
       bAdd.addEventListener('click', function () {
         var ru = sh.querySelector('.tr').textContent;
